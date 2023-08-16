@@ -1,0 +1,1898 @@
+
+/**
+ * <pre>
+ * DGBHP PROJECT
+ * @COPYRIGHT (c) 2009-2012 WebCash, Inc. All Right Reserved.
+ *
+ * @File Name        : ebz_ibs.bbs_ebz_submain.js / bbs_ebz_submain.js 
+ * @File path        : DGBHP_PT_STATIC/web/js/hmp/com  
+ *                     DGBIB_PT_STATIC/web/js/ibsCustom
+ * @author           : 김원진 
+ * @Description      : 서브메인 노출용 게시판 html 출력
+ * @History          : 20130313092914, 김원진
+ * @ETC              : HP / IB  복수관리대상(양쪽 PT에 존재함) 
+ * </pre>
+ **/
+/******************************/
+/** getSubBbsHtml() 호출 key **/
+/******************************/
+//1  : 메인                / 새소식               
+//2  : 메인                / 지역행사             
+//3  : 메인                / 이벤트               
+//4  : DGB소개             / 새소식               
+//5  : DGB소개             / 보도자료             
+//6  : 개인뱅킹            / 새소식               
+//7  : 기업뱅킹            / 새소식               
+//8  : 지역사회공헌        / 지역보도자료         
+//9  : 지역사회공헌        / 지역사회활동         
+//10 : DGB패밀리           / 퇴직행우동정         
+//11 : DGB패밀리           / 혼사                 
+//12 : DGB패밀리           / 조사
+//26 : DGB패밀리           / 가족행복센터(공지사항)
+//13 : 베스트오브베스트    / 신규 베스트 of 베스트
+//14 : 베스트오브베스트    / 맛집 멋집 방문기     
+//15 : eZ뱅크              / 새소식               
+//16 : eZ뱅크              / 이벤트               
+//17 : 사이버경주지점      / 공지사항             
+//18 : 사이버경주지점      / 이벤트               
+//19 : 사이버그린          / 공지사항             
+//20 : 사이버그린          / 환경뉴스             
+//21 : 사이버그린          / 이벤트               
+//22 : 사이버한수원        / 공지사항             
+//23 : 사이버한수원        / 이벤트               
+//24 : 사이버독도          / 공지사항             
+//25 : 사이버독도          / 이벤트    
+
+var siteCd          = "";
+var menuCd          = "";
+var bbsId           = "";
+var rowCnt          = 0;
+var mainUrl         = "";
+var EtcMainUrl      = "";
+var EtcBbsListUrl   = "";
+var EtcBbsDetailUrl = "";
+var arrBbsList;     //조회내용
+var subBbsKey = 0;
+var pObj = {};
+var jObj = {};
+var arrJOBj = new Array();
+var arrSubBbsKeySet = new Array();
+var menuId;
+var menuNum;
+var menuVal;
+var locIdxBySub  = 0;
+var callCntByIdx = 0;
+var homeUrl = "";
+
+/*
+ * 서브메인 노출게시판 HTML 생성.
+ * 대상 서브메인의 게시판이 출력되는 모든 컨테이너내에 HTML 비우고 본 함수의 리턴값을 .append()한다.
+ */
+function getSubBbsHtml(dvCd){
+    homeUrl = _CodeMgr.getCodeMsg("CODE_URL", "1002");
+    homeUrl = homeUrl.substr(0, homeUrl.length-1);
+    
+    subBbsKey = dvCd;
+    setParam();
+
+        if(subBbsKey != "44"){
+            /* 2/3  DATA를 불러온다 */
+            var jexAjax = jex.createAjaxUtil("bbs_ebz_10010_bord_d0071");
+            
+            //jexAjax.setCache(true);
+            jexAjax.addHeader("cache-control","private");
+            jexAjax.addHeader("pragma","");
+            jexAjax.setType("GET");
+
+            jexAjax.set("BBS_ID"          , bbsId );
+            jexAjax.set("PUTUP_SITE_DVCD" , siteCd);
+            jexAjax.set("PUTUP_MNU_DVCD"  , menuCd);
+            jexAjax.set("RCOUNT"          , rowCnt);
+            //_BBS_TOPDVCD = "25";
+            if     (dvCd == "37"){//지역행사[대구]
+                jexAjax.set("ZON_LV_CD"          , "100");
+            }
+            else if(dvCd == "38"){//지역행사[경북]
+                jexAjax.set("ZON_LV_CD"          , "200");
+            }else if(dvCd == "42" || dvCd == "70" || dvCd == "73"){
+                jexAjax.set("EVENT_CUR_YN"       , "Y");
+            }else if(dvCd == "45"){
+                jexAjax.set("EVENT_CUR_YN"       , "N");
+            }else if (dvCd == "72" || dvCd == "71")
+            {
+                jexAjax.set("EVENT_CUR_YN"       , "Y");
+                jexAjax.set("APRYN"              , "Y");
+            }
+            
+            jexAjax.setAsync(false);
+            
+            jexAjax.execute(function(dat) {
+                
+                arrBbsList = dat.REC1;
+                
+            });
+        }
+//  }
+    
+    /* 3/3  HTML 출력 */
+    return createBbsHtml();
+}
+
+/*
+ * 출력dat.REC1 를 통해 HTML문을 구성한다.
+ * */
+function createBbsHtml(){
+    var rstHtml = "";
+    //TODO: NEW 아이콘 첨부 기준 정의되면 <a>★</a> 이렇게 넣어주긔
+    //<img src=\"/img/common/sub/ebz_Psub_icon_new.gif\" alt=\"new\">
+
+    var arrLen = ( arrBbsList.length < 4 ? arrBbsList.length : 4 );
+    if(null != arrBbsList) {
+        switch (subBbsKey){
+            case 1 ://1  : 메인                / 새소식
+                for(var i=0;i < arrLen;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml += '<li>';
+                    rstHtml += '    <button type="button">';
+                    rstHtml += '        <span>';
+                    rstHtml += '            <em onclick="javascript:goBbsPagePreMain('+ obj.PUTUP_WRIT_SEQ +',1,0);">'+ obj.TIT_NM +'</em>';
+                    rstHtml += '            <span>'+ obj.REG_DTTI +'</span>';
+                    rstHtml += '        </span>';
+                    rstHtml += '    </button>';
+                    rstHtml += '</li>';
+                }
+                break;
+            case 2 ://2  : 메인                / 지역행사
+                rstHtml
+                    += "<h3 class=\"titleSub\">"
+                    +  "    <img src=\"/img/common/main/ebz_top_board_tit_2.gif\" alt=\"지역행사\">"
+                    +  "</h3>"
+                    +  "<ul>";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml 
+                        +="  <li class=\"list\"><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",2,1);\" title=\"\">"+ obj.TIT_NM +"</a>";
+                    //NEW ICON 추가기준
+                    if(obj.NEW_YN == "Y"){
+                        rstHtml
+                            +=" <img src=\"/img/common/sub/ebz_Psub_icon_new.gif\" alt=\"new\">";
+                    }
+                    
+                    rstHtml
+                     += "<span class=\"right\">"+ arrBbsList[i].REG_DTTI +"</span></li>";
+                }
+                rstHtml 
+                    +="    </ul>"
+                    + "    <span class=\"main_more_bodBtn1\" style=\"padding-left:205px\"><a href=\"javascript:goBbsPagePreMain(0,2,1);\" title=\"지역행사 더보기\" class=\"subMoreBtn\">더보기 <img src=\"../img/common/sub/ebz_sub_bult03.gif\" alt=\"eventMore\" align=\"absmiddle\"></a></span>";
+                break;
+            case 3 ://3  : 메인                / 이벤트
+                 for(var i=0;i < arrLen;i++){
+                        var obj = arrBbsList[i];
+                        rstHtml += '<li>';
+                        rstHtml += '    <button type="button">';
+                        rstHtml += '        <span>';
+                        rstHtml += '            <em onclick="javascript:goBbsPagePreMain('+ obj.PUTUP_WRIT_SEQ +',3,1);">'+ obj.TIT_NM +'</em>';
+                        rstHtml += '            <span>'+ obj.REG_DTTI +'</span>';
+                        rstHtml += '        </span>';
+                        rstHtml += '    </button>';
+                        rstHtml += '</li>';
+                    }
+//              
+//              rstHtml 
+//                  += "<p class=\"con_slide_box\"></p>"
+//                  +  "<div class=\"event-cont\" style=\"position:relative;\">";
+//              for(var i=0;i < arrBbsList.length;i++){
+//              var obj = arrBbsList[i];
+//              var scrtNum = ( i + 1 ) * 1;                
+//              if(i > 0)
+//                  rstHtml +="<a class=\"page active\" style=\"margin-left:330px;\" onkeyup=\"thisArea3("+ scrtNum +")\" href=\"thisArea3("+ scrtNum +");\" href=\"#event"+ scrtNum +"\">"+ scrtNum +"</a>";                   
+//              else
+//                  rstHtml +="<a style=\"margin-left:270px;\" class=\"page\" onKeyUp=\"thisArea3("+ scrtNum +")\" href=\"thisArea3("+ scrtNum +")\" href=\"#event2\">"+ scrtNum +"</a>";
+                
+//              rstHtml 
+//                  +="<p class=\"con_slide_box\">"
+//                  + "<span class=\"right\"><a href=\"goBbsPagePreMain(0,3,2);\" title=\"더보기\" class=\"subMoreBtn\">더보기</a></span>"
+//                  + "</p>"
+//                  + "<div class=\"event-cont\" style=\"position:relative;\" >";
+//              for(var i=0;i < arrBbsList.length;i++){
+//                  var obj = arrBbsList[i];
+//                  var scrtNum = ( i + 1 ) * 1;
+//                  
+//                  if(i > 0)
+//                      rstHtml +="<a class=\"page\" onKeyUp=\"thisArea3("+ scrtNum +")\" href=\"thisArea3("+ scrtNum +")\" href=\"#event"+ scrtNum +"\">"+ scrtNum +"</a>";
+//                  else
+//                      rstHtml +="<a style=\"margin-left:270px;\" class=\"page\" onKeyUp=\"thisArea3("+ scrtNum +")\" href=\"thisArea3("+ scrtNum +")\" href=\"#event2\">"+ scrtNum +"</a>";
+//                      
+//                  rstHtml
+//                      +="<p style=\"left:0px; top:0px; display:block; position:absolute; z-index:0;\" id=\"event"+ scrtNum +"\" class=\"event\">"
+//                      + "   <a title=\""+ obj.EVENT_NM +"\" href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",3,2);\">"
+//                      + "     <img alt=\""+ obj.EVENT_NM +"\" src=\""+ homeUrl + obj.IMG_PATH_NM + obj.IMG_FILE_NM +"\">"
+//                      + "   </a>"
+//                      + "</p>";
+//              }       
+//              rstHtml 
+//                  += "</div>";
+                 
+                break;
+            case 4 ://4  : DGB소개             / 새소식
+                
+                rstHtml
+                    +="   <p class=\"title_line\">새소식</p>"
+                    + "    <ul class=\"list_type1\">";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml 
+                        +="  <li><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",4,0);\" title=\"\">"+ obj.TIT_NM +"</a><span>"+ obj.REG_DTTI +"</span></li>";
+                }
+                rstHtml 
+                    +="    </ul>"
+                    + "<p class=\"btn_more\"><a href=\"javascript:goBbsPagePreMain(0,4,0)\" title=\"새소식 더보기\"><span>더보기</span></a></p>";
+                 
+                break;
+            case 5 ://5  : DGB소개             / 보도자료
+                
+                rstHtml
+                    +="   <p class=\"title_line\">DGB뉴스</p>"
+                    + "    <ul class=\"list_type1\">";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml 
+                        +="  <li><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",5,1);\" title=\"\">"+ obj.TIT_NM +"</a><span>"+ obj.REG_DTTI +"</span></li>";
+                }       
+                rstHtml 
+                    +="    </ul>"
+                    + "<p class=\"btn_more\"><a href=\"javascript:goBbsPagePreMain(0,5,1);\" title=\"DGB뉴스 더보기\"><span>더보기</span></a></p>";
+                 
+                break;
+            case 6 ://6  : 개인뱅킹            / 새소식
+                
+                rstHtml
+                    +="    <h3 class=\"titleSub01\">새소식</h3>"
+                    + "    <ul>";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml 
+                        +="  <li ><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",6,0);\" title=\"\">"+ obj.TIT_NM +"</a></li>";
+                }
+                rstHtml 
+                    +="    </ul>"
+                    + "<span class=\"board_rgt_more\"><a href=\"javascript:goBbsPagePreMain(0,6,0);\" title=\"새소식 더보기\" class=\"subMoreBtn\">더보기</a></span>";
+                break;
+            case 7 ://7  : 기업뱅킹            / 새소식
+                
+                rstHtml
+                    +="    <h3 class=\"titleSub01\">새소식</h3>"
+                    + "    <ul>";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml 
+                        +="  <li ><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",7,0);\" title=\"\">"+ obj.TIT_NM +"</a></li>";
+                }       
+                rstHtml 
+                    +="    </ul>"
+                    + "<span class=\"board_rgt_more\"><a href=\"javascript:goBbsPagePreMain(0,7,0);\" title=\"새소식 더보기\" class=\"subMoreBtn\">더보기</a></span>";
+                
+                break;
+            case 8 ://8  : 지역사회공헌        / 지역보도자료  ==> 보도자료로 명명 변경  06.28
+                
+                rstHtml += "<p class=\"ser_tit\">보도자료</p>"+
+                           "<div class=\"ser_list_go\"><ul class=\"list_in\">"; 
+                
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    
+                    rstHtml += "<li class=\"list_01\"><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",8,0);\" title=\""+ obj.TIT_NM +"\"><p>"+ obj.TIT_NM +"</p><span>"+ arrBbsList[i].REG_DTTI +"</span></a></li>";
+
+                }
+                
+                rstHtml +="</ul>"
+                        + "<p class=\"list_03\"><a href=\"javascript:goBbsPagePreMain(0,8,0);\" title=\"보도자료 더보기\">더보기</a></p>";
+                
+                break;
+            case 9 ://9  : 지역사회공헌        / 지역사회활동  ==> 주요활동으로  명명변경 06.28
+    
+                rstHtml
+                    +="<h3>"
+                    + "    주요활동"
+                    + "</h3>"
+                    + "<ul>";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml 
+                        +="<li>"
+                        + "    <div class=\"thumb\"><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",9,1);\" title=\""+ obj.TIT_NM +"\"><img src=\""+ homeUrl + obj.IMG_PATH_NM + obj.IMG_FILE_NM +"\" alt=\""+ obj.TIT_NM +"\" style=\"width:99px;height:64px;\"/></a></div>"
+                        + "    <div class=\"txt\"><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",9,1);\" title=\""+ obj.TIT_NM +"\">"+ obj.TIT_NM +"</a>"+ obj.PUTUP_WRIT_CN +"</div>"
+                        + "</li>";
+                }
+                rstHtml 
+                    +="    </ul>"
+                    + "    <span style=\"padding-right:25px; background: url(../../../img/common/bullet/ebz_bult_type1.gif) 39px 7px no-repeat; position:absolute; top:16px; left:112px;\"><a href=\"javascript:goBbsPagePreMain(0,9,1);\" title=\"주요활동 더보기\">더보기</a></span>"; 
+                break;
+            case 26://26 : DGB패밀리           / 가족행복센터
+                rstHtml
+                    +="<h4>DGB가족행복센터</h4>"
+                    + "<ul class=\"list_type1\">";
+                //for(var i=0;i < arrBbsList.length;i++){
+                arrLen = ( arrBbsList.length < 1 ? arrBbsList.length : 1 );
+                for(var i=0;i < arrLen;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml
+                        +="    <li>"
+                        +  "<a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",26,0);\" title=\"\">"+ obj.TIT_NM +"</a>";
+                        + "    </li>";
+                }
+                if(arrBbsList.length == 0) rstHtml += "게시글이 존재하지 않습니다.";
+                rstHtml
+                    +="</ul>"
+                    + "<p class=\"btn_more\"><a href=\"javascript:goBbsPagePreMain(0,26,0);\" title=\"DGB가족행복센터 더보기\"><span>더보기</span></a></p>";
+                break;
+            case 10://10 : DGB패밀리           / 퇴직행우동정
+                rstHtml
+                    +="<h4>퇴직행우동정</h4>"
+                    + "<ul class=\"list_type1\">";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml 
+                        += "<li><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",10,2);\" title=\"\">"+ obj.TIT_NM +"</a><span>"+obj.REG_DTTI+"</span></li>";
+                }
+                rstHtml 
+                    +="    </ul>"
+                    
+                    + "<p class=\"btn_more\"><a href=\"javascript:goBbsPagePreMain(0,10,2);\" title=\"퇴직행우동정 더보기\"><span>더보기</span></a></p>";
+                break;
+            case 11://11 : DGB패밀리           / 혼사
+                rstHtml
+                    +="<h4>혼사</h4>"
+                    + "<ul class=\"list_type1\">";
+                //for(var i=0;i < arrBbsList.length;i++){
+                arrLen = ( arrBbsList.length < 1 ? arrBbsList.length : 1 );
+                for(var i=0;i < arrLen;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml 
+                        += "<li><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",11,3);\" title=\"\">"+ obj.TIT_NM +"</a></li>";
+                }
+                rstHtml 
+                    +="    </ul>"
+                    + "<p class=\"btn_more\"><a href=\"javascript:goBbsPagePreMain(0,11,3);\" title=\"혼사 더보기\"><span>더보기</span></a></p>";
+                break;
+            case 12://12 : DGB패밀리           / 조사
+                rstHtml
+                    +="<h4>조사</h4>"
+                    + "<ul class=\"list_type1\">";  
+                //for(var i=0;i < arrBbsList.length;i++){
+                arrLen = ( arrBbsList.length < 1 ? arrBbsList.length : 1 );
+                for(var i=0;i < arrLen;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml 
+                        += "<li class=\"list\"><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",12,4);\" title=\"\" style=\"max-width:197px;\">"+ obj.TIT_NM +"</a></li>";
+                }
+                rstHtml
+                    +="    </ul>"
+                    + "<p class=\"btn_more\"><a href=\"javascript:goBbsPagePreMain(0,12,4);\" title=\"조사 더보기\"><span>더보기</span></a></p>";
+                break;
+            case 13://13 : 베스트오브베스트    / 신규 베스트 of 베스트
+                rstHtml
+                    +="<h3>신규 베스트 of 베스트</h3>"
+                    + "<ul>"
+                    + "    <li>";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml 
+                        += "<div class=\"thumb\"><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",13,0);\" title=\""+ obj.TIT_NM +"\"><img src=\""+ homeUrl +obj.IMG_PATH_NM + obj.IMG_FILE_NM +"\" alt=\"img\" style=\"width:99px;height:64px;\" /></a></div>"
+                        +  "<div class=\"txt\"><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",13,0);\" title=\""+ obj.TIT_NM +"\">"+ obj.TIT_NM +"</a><p>"+ jex.null2Void(obj.EVENT_DTL_CN) +"</p></div>";
+                }
+                rstHtml 
+                    +="    </li>"
+                    + "</ul>"
+                    + "<span class=\"board_rgt_more4\"><a href=\"javascript:goBbsPagePreMain(0,13,0);\" title=\"신규베스트of베스트 더보기\">더보기</a></span>";
+                break;
+            case 14://14 : 베스트오브베스트    / 맛집 멋집 방문기
+                rstHtml
+                    +="<h3>맛집 멋집 방문기</h3>"
+                    + "<ul>";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml 
+                        +="<li>"
+                        + "    <div class=\"thumb\"><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",14,1);\" title=\""+ obj.TIT_NM +"\"><img src=\""+ homeUrl + obj.IMG_PATH_NM + obj.IMG_FILE_NM +"\" alt=\"img\"  style=\"width:99px;height:64px;\" /></a></div>"
+                        + "    <div class=\"txt\"><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",14,1);\" title=\""+ obj.TIT_NM +"\">"+ obj.TIT_NM +"</a><p>"+ jex.null2Void(obj.EVENT_DTL_CN) +"</p></div>"
+                        + "</li>";
+                }
+                rstHtml 
+                    += "</ul>"
+                    +  "<span class=\"board_rgt_more2\"><a href=\"javascript:goBbsPagePreMain(0,14,1);\" title=\"맛집 멋집 방문기 더보기\">더보기</a></span>";
+                break;
+            case 15://15 : eZ뱅크              / 새소식
+                rstHtml
+                    +="<h3 class=\"titleSub01\">새소식</h3>"
+                    + "<ul>";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml 
+                        += "<li class=\"list\"><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",15,0);\" title=\""+ obj.TIT_NM +"\">"+ obj.TIT_NM +"</a>";
+                    //NEW ICON 추가기준
+                    if(obj.NEW_YN == "Y"){
+                        rstHtml
+                            +=" <img src=\"/img/common/sub/ebz_Psub_icon_new.gif\" alt=\"new\">";
+                    }
+                    
+                    rstHtml
+                     += "<span class=\"right\">"+ arrBbsList[i].REG_DTTI +"</span></li>";
+                }
+                rstHtml 
+                    += "</ul>"
+                    +  "<span class=\"board_rgt_more\"><a href=\"javascript:goBbsPagePreMain(0,15,0);\" title=\"새소식 더보기\" class=\"subMoreBtn\">더보기</a></span>";
+                break;
+            case 16://16 : eZ뱅크              / 이벤트
+                rstHtml
+                    += "<h3 class=\"titleSub01\">이벤트</h3>";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml 
+                        += "<p><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",16,1);\" title=\""+ obj.TIT_NM +"\"><img style=\"width:300px;height:100px;\" src=\""+ homeUrl + obj.IMG_PATH_NM + obj.IMG_FILE_NM +"\" alt=\""+ obj.TIT_NM +"\" /></a></p>";
+                } 
+                rstHtml += "<span class=\"board_rgt_more\"><a href=\"javascript:goBbsPagePreMain(0,16,1);\" title=\"이벤트 더보기\" class=\"subMoreBtn\">더보기</a></span>";
+    
+                break;
+            case 17://17 : 사이버경주지점      / 공지사항
+                rstHtml
+                    +="<h5>공지사항</h5>"
+                    + "<ul  class=\"list_type1\">";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml 
+                        += "<li><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",17,0);\" title=\"\">"+ obj.TIT_NM +"</a> "
+                        +  "<span class=\"right\">"+ obj.REG_DTTI +"</span></li>";
+                }
+                rstHtml 
+                    += "</ul>"
+                    + "<p class=\"btn_more\"><a href=\"javascript:goBbsPagePreMain(0,17,0);\" title=\"공지사항 더보기\"><span>더보기</span></a></p>";
+                break;
+            case 18://18 : 사이버경주지점      / 이벤트
+                rstHtml +="<h5>이벤트</h5>";
+                arrLen = ( arrBbsList.length < 1 ? arrBbsList.length : 1 );
+                for(var i=0;i < arrLen;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml +="<div class=\"banner_wrap\"><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",18,1);\" title=\""+ obj.TIT_NM +"\"><img style=\"width:300px;height:100px;\" src=\""+ homeUrl + obj.IMG_PATH_NM + obj.IMG_FILE_NM +"\" alt=\""+ obj.TIT_NM +"\" />"
+                        //+ " <p class=\"date\">행사시간 : "+obj.EVENT_STRT_DTTI+" ~ "+obj.EVENT_END_DTTI+ "</p>"
+                        + "</a></div>";
+                } 
+                rstHtml += "<p class=\"btn_more\"><a href=\"javascript:goBbsPagePreMain(0,18,1);\" title=\"이벤트 더보기\" ><span>더보기</span></a>";
+    
+                break;
+                
+            case 19://19 : 사이버그린          / 공지사항
+                rstHtml += "<ul class=\"list_type1\">";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml 
+                        += "<li><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",19,0);\" title=\"\">"+ obj.TIT_NM +"</a> "
+                        +  "<span class=\"right\" style=\"*position:absolute; *bottom:8px;\">"+ obj.REG_DTTI +"</span></li>";
+                }
+                rstHtml 
+                    += "</ul>"
+                    +  "<p class=\"btn_more\"><a href=\"javascript:goBbsPagePreMain(0,19,0);\" title=\"공지사항 더보기\" ><span>더보기</span></a></p>";
+                    
+                break;
+            case 20://20 : 사이버그린          / 환경뉴스
+                rstHtml
+                    +="<ul class=\"list_type1\">";+ "<ul>";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml 
+                    += "<li><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",20,1);\" title=\"\">"+ obj.TIT_NM +"</a> "
+                    +  "<span class=\"right\" style=\"*position:absolute; *bottom:8px;\">"+ obj.REG_DTTI +"</span></li>";
+                }
+                rstHtml 
+                    += "</ul>"
+                        +  "<p class=\"btn_more\"><a href=\"javascript:goBbsPagePreMain(0,20,1);\" title=\"환경뉴스 더보기\" ><span>더보기</span></a></p>";
+                break;
+            case 21://21 : 사이버그린          / 이벤트
+                rstHtml +="<h5>이벤트</h5>";
+                for(var i=0;i < 1;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml 
+                    += "<p><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",21,2);\" title=\""+ obj.TIT_NM +"\"><img style=\"width:300px;height:100px;\" src=\""+ homeUrl + obj.IMG_PATH_NM + obj.IMG_FILE_NM +"\" alt=\""+ obj.TIT_NM +"\" /></a></p>";
+                } 
+                rstHtml += "<p class=\"btn_more\"><a href=\"javascript:goBbsPagePreMain(0,21,2);\" title=\"이벤트 더보기\"><span>더보기</span></a>";
+            
+                break;
+                
+            case 22://22 : 사이버한수원        / 공지사항
+                rstHtml +="<h5>공지사항</h5>"
+                    + "<ul  class=\"list_type1\">";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml 
+                        += "<li><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",22,0);\" title=\"\">"+ obj.TIT_NM +"</a> "
+                        +  "<span class=\"right\">"+ obj.REG_DTTI +"</span></li>";
+                }
+                rstHtml 
+                    += "</ul>"
+                    +  "<p class=\"btn_more\"><a href=\"javascript:goBbsPagePreMain(0,22,0);\" title=\"공지사항 더보기\"><span>더보기</span></a></p>";
+                break;
+            case 23://23 : 사이버한수원        / 이벤트
+                rstHtml +="<h5>이벤트</h5>";
+                arrLen = ( arrBbsList.length < 1 ? arrBbsList.length : 1 );
+                for(var i=0;i < arrLen;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml +="<div class=\"banner_wrap\"><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",23,1);\" title=\""+ obj.TIT_NM +"\"><img style=\"width:300px;height:100px;\" src=\""+ homeUrl + obj.IMG_PATH_NM + obj.IMG_FILE_NM +"\" alt=\""+ obj.TIT_NM +"\" />"
+                        + "</a></div>";
+                } 
+                rstHtml += "<p class=\"btn_more\"><a href=\"javascript:goBbsPagePreMain(0,23,1);\" title=\"이벤트 더보기\" ><span>더보기</span></a>";
+    
+                break;
+                
+            case 24://24 : 사이버독도          / 공지사항
+                rstHtml
+                    +="<h5>공지사항</h5>"
+                    + "<ul  class=\"list_type1\">";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml 
+                        += "<li><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",24,0);\" title=\"\">"+ obj.TIT_NM +"</a> "
+                        +  "<span class=\"right\">"+ obj.REG_DTTI +"</span></li>";
+                }
+                rstHtml 
+                    += "</ul>"
+                    + "<p class=\"btn_more\"><a href=\"javascript:goBbsPagePreMain(0,24,0);\" title=\"공지사항 더보기\"><span>더보기</span></a></p>";
+                break;
+            case 25://25 : 사이버독도          / 이벤트
+                rstHtml
+                    +="<h5>이벤트</h5>";
+                arrLen = ( arrBbsList.length < 1 ? arrBbsList.length : 1 );
+                for(var i=0;i < arrLen;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml 
+                        +="<div class=\"banner_wrap\"><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",25,1);\" title=\""+ obj.TIT_NM +"\"><img style=\"width:300px;height:100px;\" src=\""+ homeUrl + obj.IMG_PATH_NM + obj.IMG_FILE_NM +"\" alt=\""+ obj.TIT_NM +"\" />"
+                        + "</a></div>";
+                } 
+                rstHtml += "<p class=\"btn_more\"><a href=\"javascript:goBbsPagePreMain(0,25,1);\" title=\"이벤트 더보기\" ><span>더보기</span></a>";
+    
+                break;
+            case 37://37 : 지역사랑 / 대구지역행사
+                rstHtml
+                    += "<h3 class=\"titleregion\">대구지역행사</h3>"
+                    +  "<ul>";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml 
+                        +="  <li class=\"list\"><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",37,0);\" title=\"\">"+ obj.TIT_NM +"</a>";
+                    
+                    //NEW ICON 추가기준
+                    if(obj.NEW_YN == "Y"){
+                        rstHtml
+                            +=" <img src=\"/img/common/sub/ebz_Psub_icon_new.gif\" alt=\"new\">";
+                    }
+                    
+                    rstHtml
+                     += "</li>";
+                }
+                rstHtml 
+                    +="    </ul>"
+                    + "<span class=\"board_rgt_more2\"><a href=\"javascript:goBbsPagePreMain(0,37,0);\" title=\"대구지역행사 더보기\" class=\"subMoreBtn\">더보기</a></span>";
+                break;
+            case 38://38 : 지역사랑 / 경북지역행사
+                rstHtml
+                    += "<h3 class=\"titleregion\">경북지역행사</h3>"
+                    +  "<ul>";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml 
+                        +="  <li class=\"list\"><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",38,1);\" title=\"\">"+ obj.TIT_NM +"</a>";
+                    
+                    //NEW ICON 추가기준
+                    if(obj.NEW_YN == "Y"){
+                        rstHtml
+                            +=" <img src=\"/img/common/sub/ebz_Psub_icon_new.gif\" alt=\"new\">";
+                    }
+                    
+                    rstHtml
+                     += "</li>";
+                }
+                rstHtml 
+                    +="    </ul>"
+                    + "<span class=\"board_rgt_more2\"><a href=\"javascript:goBbsPagePreMain(0,38,1);\" title=\"경북지역행사 더보기\" class=\"subMoreBtn\">더보기</a></span>";
+                break;
+            case 39://39 : 혁신도시 / 은행소식
+                rstHtml
+                    //+= "<h3 class=\"titleSub01\">은행소식</h3>"
+                    += "<ul class=\"list_type1\">";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml 
+                        +="  <li><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",39,0);\" title=\"\">"+ obj.TIT_NM +"</a>";
+                    
+                    //NEW ICON 추가기준
+                    if(obj.NEW_YN == "Y"){
+                        rstHtml
+                            +=" <img src=\"/img/common/sub/ebz_Psub_icon_new.gif\" alt=\"new\">";
+                    }
+                    
+                    rstHtml
+                     += "<span class=\"right\" style=\"*position:absolute; *bottom:8px;\">"+ obj.REG_DTTI +"</span>" 
+                     +  "</li>";
+                }
+                rstHtml 
+                    +="    </ul>"
+                    + "<p class=\"btn_more\"><a href=\"javascript:goBbsPagePreMain(0,39,0);\" title=\"은행소식 더보기\"><span>더보기</span></a></p>";
+                break;
+            case 40://40 : 혁신도시 / 혁신도시뉴스
+                rstHtml
+                    //+= "<h3 class=\"titleSub01\" style=\"padding: 20px 0 15px 0;\">혁신도시뉴스</h3>"
+                    += "<ul class=\"list_type1\">";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml 
+                        +="  <li><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",40,1);\" title=\"\">"+ obj.TIT_NM +"</a>";
+                    
+                    //NEW ICON 추가기준
+                    if(obj.NEW_YN == "Y"){
+                        rstHtml
+                            +=" <img src=\"/img/common/sub/ebz_Psub_icon_new.gif\" alt=\"new\">";
+                    }
+                    
+                    rstHtml
+                     += "<span class=\"right\" style=\"*position:absolute; *bottom:8px;\">"+ obj.REG_DTTI +"</span></li>" 
+                     +  "</li>";
+                }
+                rstHtml 
+                    +="    </ul>"
+                    + "<p class=\"btn_more\"><a href=\"javascript:goBbsPagePreMain(0,40,1);\" title=\"혁신도시뉴스 더보기\"><span>더보기</span></a></p>";
+                break;
+            case 41://41 : 혁신도시 / 이벤트
+                rstHtml
+                    +="<h5>이벤트</h5>";
+                arrLen = ( arrBbsList.length < 1 ? arrBbsList.length : 1 );
+                for(var i=0;i < arrLen;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml 
+                        +="<div class=\"banner_wrap\"><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",41,2);\" title=\""+ obj.TIT_NM +"\">" +
+                                "<img style=\"width:300px;height:100px;\" src=\""+ homeUrl + obj.IMG_PATH_NM + obj.IMG_FILE_NM +"\" alt=\""+ obj.TIT_NM +"\" />"
+                        + "</a></div>";
+                } 
+                rstHtml += "<p class=\"btn_more\"><a href=\"javascript:goBbsPagePreMain(0,41,2);\" title=\"이벤트 더보기\"><span>더보기</span></a></p>";
+    
+                break;
+            case 42://42 : 카드몰 / 진행중인이벤트
+                rstHtml
+                    +="<ul>"
+                    + "    <li class=\"active\"><a href=\"#\" title=\"진행중이벤트\"><span>진행중이벤트</span></a>"
+                    + "        <ul style=\"display: block;\">";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    if(i == 0){
+                        rstHtml 
+                        +="  <li class=\"first\"><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",42,0);\">"+ obj.TIT_NM +"</a>";
+                    }else{
+                        rstHtml 
+                        +="  <li ><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",42,0);\">"+ obj.TIT_NM +"</a>";                        
+                    }
+                    
+                    //NEW ICON 추가기준
+                    if(obj.NEW_YN == "Y"){
+                        rstHtml
+                            +="<span class=\"new\"><img src=\"../../../img/common/mark/ebz_mark_new01.gif\" alt=\"new\" /></span>";
+                    }
+                    
+                    rstHtml
+                     += " <span class=\"time\">"+ obj.REG_DTTI +"</span></li>";
+                }
+                rstHtml 
+                    += "        </ul>"
+                     + "    </li>"
+                     + "    <li><a href=\"https://www.bccard.com/app/card/evntSubmainActn.do\" target=\"_blank\" title=\"BC공동이벤트\"><span>BC공동이벤트</span></a>"
+                     + "    <ul></ul></li>"
+                     + "    <li><a href=\"javascript:goBbsPagePreMain(0,44,2);\" title=\"당첨자발표\"><span>당첨자발표</span></a>"
+                     + "    <ul></ul></li>"
+                     + "    <li><a href=\"javascript:goEvent(45);\" title=\"지난이벤트\"><span>지난이벤트</span></a>"
+                     + "    <ul></ul></li>"
+                     + "</ul>";
+                break;
+            
+            case 43://43 : 카드몰 / 이벤트베너
+                rstHtml
+                    +="<h3 class=\"tit\">이벤트</h3>";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    
+                    rstHtml 
+                    +="<a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",43,1);\" title=\""+ obj.TIT_NM +"\">"
+                    + "   <img style=\"width:300px;height:100px;\" src=\""+ homeUrl + obj.IMG_PATH_NM + obj.IMG_FILE_NM +"\" alt=\""+ obj.TIT_NM +"\">"
+                    + "</a>";
+                }
+                
+                break;
+            case 45://45 : 카드몰 / 지난이벤트
+                rstHtml
+                    +="<ul>"
+                    + "    <li><a href=\"javascript:goEvent(42);\" title=\"진행중이벤트\"><span>진행중이벤트</span></a>"
+                    + "    <ul></ul></li>"
+                    + "    <li><a href=\"https://www.bccard.com/app/card/evntSubmainActn.do\" target=\"_blank\" title=\"BC공동이벤트\"><span>BC공동이벤트</span></a>"
+                    + "    <ul></ul></li>"
+                    + "    <li><a href=\"javascript:goBbsPagePreMain(0,44,2);\" title=\"당첨자발표\"><span>당첨자발표</span></a>"
+                    + "    <ul></ul></li>";
+                
+                rstHtml
+                    +="    <li class=\"active\"><a href=\"#\" title=\"지난이벤트\"><span>지난이벤트</span></a>"
+                    + "    <ul style=\"display: block;\">";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    if(i == 0){
+                        rstHtml 
+                        +="  <li class=\"first\"><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",45,0);\">"+ obj.TIT_NM +"</a>";
+                    }else{
+                        rstHtml 
+                        +="  <li ><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",45,0);\">"+ obj.TIT_NM +"</a>";                        
+                    }
+                    
+                    //NEW ICON 추가기준
+                    if(obj.NEW_YN == "Y"){
+                        rstHtml
+                            +="<span class=\"new\"><img src=\"../../../img/common/mark/ebz_mark_new01.gif\" alt=\"new\" /></span>";
+                    }
+                    
+                    rstHtml
+                     += " <span class=\"time\">"+ obj.REG_DTTI +"</span></li>";
+                }
+                rstHtml
+                     +="</ul></li>"
+                     + "</ul>";
+                break;
+            case 36://36 : 금융지주(korea)  / DGB뉴스
+                rstHtml
+                    +=  "<h3>DGB뉴스</h3>"
+                     +  "<div style=\"clear:both; display:block;\">"
+                     +  "    <ul style=\"margin-top:10px;\">";
+                
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml 
+                        +="<li><a href=\"javascript:goEtcBbsPage("+ obj.PUTUP_WRIT_SEQ +",36,0);\" title=\""+ obj.TIT_NM +"\">"+ obj.TIT_NM +"</a></li>";
+                }
+                
+                rstHtml 
+                    +=  "    </ul>"
+                     +  "</div>"
+                     +  "<span class=\"right\"><a href=\"javascript:goEtcBbsPage(0,36,0);\" title=\"DGB뉴스 더보기\"><img src=\"/cms/group/dfg/images/main/ebz_fq_top_plus.gif\" alt=\"더보기\"/></a></span>";
+    
+                break;
+            case 63://63 : 금융지주(kroea)  / DGB수요강좌
+                rstHtml
+                    +=  "<h3>DGB수요강좌</h3>"
+                     +  "<div style=\"clear:both; display:block;\">"
+                     +  "    <ul style=\"margin-top:10px;\">";
+                
+                arrLen = ( arrBbsList.length < 1 ? arrBbsList.length : 1 );
+                for(var i=0;i < arrLen;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml 
+                        +="<li><a href=\"javascript:goEtcBbsPage("+ obj.PUTUP_WRIT_SEQ +",63,2);\" title=\""+ obj.TIT_NM +"\">"+ obj.TIT_NM +"</a></li>";
+                }
+                
+                rstHtml 
+                    +=  "    </ul>"
+                     +  "</div>"
+                     +  "<span class=\"right\"><a href=\"javascript:goEtcBbsPage(0,63,2);\" title=\"DGB수요강좌 더보기\"><img src=\"/cms/group/dfg/images/main/ebz_fq_top_plus.gif\" alt=\"더보기\"/></a></span>";
+    
+                break;
+            case 28://28 : 금융지주(kroea)  / IR뉴스/IR레터
+                rstHtml
+                    +="<p class=\"m_info_btns\"><a href=\"javascript:goEtcBbsPage(0,28,1);\" title=\"IR일정 및 소식\">IR일정 및 소식</a></p>"
+                     + "<ul class=\"m_info_news_list\">"
+                     + "    <li class=\"invisible\">IR일정 및 소식</li>";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml 
+                        +="<li><a href=\"javascript:goEtcBbsPage("+ obj.PUTUP_WRIT_SEQ +",28,1);\" title=\""+ obj.TIT_NM +"\"><span class=\"li_strong\">"+ obj.REG_DTTI +"</span> "+ obj.TIT_NM +"</a></li>";
+                } 
+                
+                rstHtml 
+                    +=  "    </ul>";
+                
+                break;
+            case 29://29 : 금융지주(English)  / IR News
+                rstHtml
+                    += "<p class=\"m_info_btns\"><a href=\"javascript:goEtcBbsPage(0,29,0);\" title=\"IR  Activities News\">IR  Activities &amp; News</a></p>"
+                     + "<ul class=\"m_info_news_list\">"
+                     + "    <li class=\"invisible\">IR  Activities &amp; News</li>";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml 
+                        +="<li><a href=\"javascript:goEtcBbsPage("+ obj.PUTUP_WRIT_SEQ +",29,0);\" title=\""+ obj.TIT_NM +"\"><span class=\"li_strong\">"+ obj.REG_DTTI +"</span> "+ obj.TIT_NM +"</a></li>";
+                } 
+                
+                rstHtml 
+                    +=  "    </ul>";
+    
+                break;
+            case 30://30 : 데이터시스템  / NOTICE(DGB금융그룹소식)
+                rstHtml
+                    +="<ul class=\"main_list_box\">";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml 
+                        +="<li><a href=\"javascript:goEtcBbsPage("+ obj.PUTUP_WRIT_SEQ +",30,0);\" title=\"\">["+ obj.REG_DTTI +"] "+ obj.TIT_NM +"</a></li>";
+                }
+                rstHtml 
+                    +=  "    </ul>"
+                    +   "<span class=\"right\"><a href=\"javascript:goBbsMain();\" title=\"NOTICE 더보기\"><img src=\"/cms/group/dds/images/main/more_btn.gif\" alt=\"NOTICE 더보기\"></a></span>";
+                break;
+            case 31://31 : 데이터시스템  / NEWS(공지사항)
+                rstHtml
+                    +="<ul class=\"main_list_box\">";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml 
+                        +="<li><a href=\"javascript:goEtcBbsPage("+ obj.PUTUP_WRIT_SEQ +",31,1);\" title=\"\">["+ obj.REG_DTTI +"] "+ obj.TIT_NM +"</a></li>";
+                }
+                rstHtml 
+                    +=  "    </ul>"
+                    +   "<span class=\"right\"><a href=\"javascript:goBbsMain();\" title=\"NEWS 더보기\"><img src=\"/cms/group/dds/images/main/more_btn.gif\" alt=\"NEWS 더보기\"></a></span>";
+                break;
+            case 32://32 :  독사모 / 공지사항           
+                /*rstHtml
+                    += "<h3 class=\"titleSub01\">공지사항<a href=\"javascript:goEtcBbsPage(0,32,0);\" title=\"공지사항 더보기\" class=\"MoreBtn\">더보기</a>"
+                     + "</h3>"
+                     + "<ul>";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml 
+                        +="<li class=\"list\"><a href=\"javascript:goEtcBbsPage("+ obj.PUTUP_WRIT_SEQ +",32,0);\" title=\"\">"+ obj.TIT_NM +"</a><span class=\"right\">"+ obj.REG_DTTI +"</span></li>";
+                }*/
+
+                rstHtml += "<ul class=\"list_type1 main_cardtab\">";
+                
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml += "<li><a href=\"javascript:goBbsPagePreMainCD("+ obj.PUTUP_WRIT_SEQ +",32,0,'1020');\" title=\"\">"+ obj.TIT_NM +"</a><span>"+ obj.REG_DTTI +"</span></li>";
+                }
+                
+                rstHtml += "</ul><p class=\"more\"><a href=\"javascript:goBbsPagePreMainCD(0,32,0,'1020');\"><span>더보기</span></a></p>";
+                break;
+            case 33://33 :  독사모 / 언론보도
+                rstHtml += "<ul class=\"list_type1 main_cardtab\">";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml += "<li><a href=\"javascript:goBbsPagePreMainCD("+ obj.PUTUP_WRIT_SEQ +",33,1,'1020');\" title=\"\">"+ obj.TIT_NM +"</a><span>"+ obj.REG_DTTI +"</span></li>";
+                }
+                rstHtml += "</ul><p class=\"more\"><a href=\"javascript:goBbsPagePreMainCD(0,33,1,'1020');\"><span>더보기</span></a></p>";
+
+                break;
+            case 34://34 :  상해지점(korea) / 공지사항
+                rstHtml
+                    += "<h3>News &amp; Notice</h3>"
+                     + "<ul>";
+                
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml 
+                        += "<li><a href=\"javascript:goEtcBbsPage("+ obj.PUTUP_WRIT_SEQ +",34,0);\" title=\"\">"+ obj.TIT_NM +"</a> <span class=\"date\">"+ obj.REG_DTTI +"</span></li>";
+                }
+    
+                rstHtml 
+                    +=  "    </ul>"
+                    +   "<p class=\"more\"><a href=\"javascript:goEtcBbsPage(0,34,0);\" title=\"MORE\"><img src=\"/cms/site/dcn/img/icon_more.png\" alt=\"News &amp; Notice 더보기\" /></a></p>";
+                break;
+            case 35://35 :  상해지점(중문) / 공지사항
+                rstHtml
+                    += "<h3 >News & Notice</h3>"
+                     + "<ul>";
+                
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml 
+                        += "<li><a href=\"javascript:goEtcBbsPage("+ obj.PUTUP_WRIT_SEQ +",35,0);\" title=\"\">"+ obj.TIT_NM +"</a> <span class=\"date\">"+ obj.REG_DTTI +"</span></li>";
+                }
+    
+                rstHtml 
+                    +=  "    </ul>"
+                    +   "<p class=\"more\"><a href=\"javascript:goEtcBbsPage(0,35,0);\" title=\"MORE\"><img src=\"/cms/site/dcn/img/icon_more.png\" alt=\"News &amp; Notice 더보기\" /></a></span>";
+                break;
+            case 46: //46 : 이벤트 / 이벤트SUB     
+                rstHtml
+                    +="<h3 class=\"tit\">이벤트</h3>";
+                for(var i=0;i < arrBbsList.length;i++){   
+                    var obj = arrBbsList[i];
+                    
+                    rstHtml 
+                    +="<a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",43,1);\" title=\""+ obj.TIT_NM +"\">"
+                    + "   <img style=\"width:300px;height:100px;\" src=\""+ homeUrl + obj.IMG_PATH_NM + obj.IMG_FILE_NM +"\" alt=\""+ obj.TIT_NM +"\">"
+                    + "</a>";
+                }
+                
+                break;  
+                
+            case 50 ://50  : DGB뉴스 / 게시판 상단
+                rstHtml
+                    +="    <ul style=\"overflow:hidden;\">";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    var writ = obj.PUTUP_WRIT_CN;
+                    writ = writ.replace(/(<([^>]+)>)/gi, "");
+                    if(writ.length > 100){
+                        writ = writ.substring(0, 50) + "..";
+                    }
+                    rstHtml 
+                        +="  <li class=\"list\" style=\"float:left;width:33%;\">"
+                        + "<img style=\"width:100%;height:100px;\" src=\""+ homeUrl + obj.IMG_PATH_NM + obj.IMG_FILE_NM +"\" alt=\""+ obj.TIT_NM +"\"><br/>"
+                        +"<a href=\"javascript:goDetailBbsPage("+ obj.PUTUP_WRIT_SEQ +",5,1);\" title=\"\"><b>"+ obj.TIT_NM +"</b></a><br/>"
+                        + writ + "<br/>"
+                        +"<span class=\"right\">"+ obj.REG_DTTI +"</span></li>";
+                }       
+                rstHtml 
+                    +="    </ul>";
+                break;
+            case 70://70 : 카드이벤트
+
+                rstHtml = "";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    if(i == 0){
+                        rstHtml 
+                        +="  <li class=\"first\"><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",70,1);\">"+ obj.TIT_NM +"</a>";
+                    }else{
+                        rstHtml 
+                        +="  <li ><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",70,1);\">"+ obj.TIT_NM +"</a>";                        
+                    }
+                    
+                    //NEW ICON 추가기준
+                    if(obj.NEW_YN == "Y"){
+                        rstHtml
+                            +="<span class=\"new\"><img src=\"../../../img/common/mark/ebz_mark_new01.gif\" alt=\"new\" /></span>";
+                    }
+                    
+                    rstHtml += "</li>";
+                }
+                break;
+            
+            case 71://71 : BC공동이벤트
+
+                rstHtml = "";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    if(i == 0){
+                        rstHtml 
+                        +="  <li class=\"first\"><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",71,2);\">"+ obj.TIT_NM +"</a>";
+                    }else{
+                        rstHtml 
+                        +="  <li ><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",71,2);\">"+ obj.TIT_NM +"</a>";
+                    }
+                    
+                    //NEW ICON 추가기준
+                    if(obj.NEW_YN == "Y"){
+                        rstHtml
+                            +="<span class=\"new\"><img src=\"../../../img/common/mark/ebz_mark_new01.gif\" alt=\"new\" /></span>";
+                    }
+                    
+                    rstHtml += "</li>";
+                }
+                break;
+
+            case 72://72 : 참여이벤트  
+
+                rstHtml = "";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    if(i == 0){
+                        rstHtml 
+                        +="  <li class=\"first\"><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",43,1);\">"+ obj.TIT_NM +"</a>";
+                    }else{
+                        rstHtml 
+                        +="  <li ><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",43,1);\">"+ obj.TIT_NM +"</a>";
+                    }
+                    
+                    //NEW ICON 추가기준
+                    if(obj.NEW_YN == "Y"){
+                        rstHtml
+                            +="<span class=\"new\"><img src=\"../../../img/common/mark/ebz_mark_new01.gif\" alt=\"new\" /></span>";
+                    }
+                    
+                    rstHtml += "</li>";
+                }
+                break;
+
+            case 73://73 : 당첨자보기
+
+                rstHtml = "";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    if(i == 0){
+                        rstHtml 
+                        +="  <li class=\"first\"><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",44,0);\">"+ obj.TIT_NM +"</a>";
+                    }else{
+                        rstHtml 
+                        +="  <li ><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",44,0);\">"+ obj.TIT_NM +"</a>";
+                    }
+                    
+                    //NEW ICON 추가기준
+                    if(obj.NEW_YN == "Y"){
+                        rstHtml
+                            +="<span class=\"new\"><img src=\"../../../img/common/mark/ebz_mark_new01.gif\" alt=\"new\" /></span>";
+                    }
+                    
+                    rstHtml += "</li>";
+                }
+                break;
+            
+            case 74://74 : 최신이벤트
+
+                rstHtml = "";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml 
+                        +="  <li class=\"banner_03_"+(i+1)+" slide_content\">"
+                        +"<a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",74,0);\">"
+                        +"<img src=\""+ homeUrl + obj.IMG_PATH_NM + obj.IMG_FILE_NM +"\" alt=\""+ obj.TIT_NM +"\" alt=\""+obj.TIT_NM+"\" width='430' height='143' /></a></li>";
+                }
+                break;
+            case 75://75 : 재테크 > 시장정보 > DGB모닝브리핑
+
+                rstHtml = "<p class=\"inbox_tit w\">재테크 정보</p>";
+                rstHtml += "<ul class=\"list_type3\">";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    
+                    rstHtml 
+                        +="  <li><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",75,1);\">"+ obj.TIT_NM +"</a>";
+                    
+                    rstHtml += " <span class=\"time\">"+ obj.REG_DTTI +"</span></li>";
+                    rstHtml += "</li>";
+                }
+                rstHtml += "</ul>";
+                rstHtml += "<p class=\"btn_more\"><a href=\"javascript:goBbsPagePreMain(0,75,1)\" title='재테크정보 더보기'>더보기</a></p>";
+                break;
+            case 76://76 : 행복은퇴설계 > 행복파트너 > 행복소식지
+
+                rstHtml = "<p class=\"inbox_tit w\">행복소식지 정보</p>";
+                rstHtml += "<ul class=\"list_type3\">";
+                for(var i=0;i < arrBbsList.length;i++){
+                    var obj = arrBbsList[i];
+                    
+                    rstHtml 
+                        +="  <li><a href=\"javascript:goBbsPagePreMain("+ obj.PUTUP_WRIT_SEQ +",76,2);\">"+ obj.TIT_NM +"</a>";
+                    
+                    rstHtml += " <span class=\"time\">"+ obj.REG_DTTI +"</span></li>";
+                    rstHtml += "</li>";
+                }
+                rstHtml += "</ul>";
+                rstHtml += "<p class=\"btn_more\"><a href=\"javascript:goBbsPagePreMain(0,76,2)\" title='행복소식지 더보기'>더보기</a></p>";
+                break;
+            case 77://77 : 메인 > 전시행사
+
+                rstHtml = "<p class=\"inbox_tit w\">전시행사안내</p>";
+                
+                arrLen = ( arrBbsList.length < 1 ? arrBbsList.length : 1 );
+                for(var i=0;i < arrLen;i++){
+                    var obj = arrBbsList[i];
+                    rstHtml += "<p class=\"sub_tit\">"+obj.TIT_NM+"</p>";
+                    rstHtml += "<ul class=\"list_type3\">";
+                    rstHtml += "<li>기간 : <span>"+jex.null2Void(obj.EVENT_STRT_DTTI)+" ~ "+jex.null2Void(obj.EVENT_END_DTTI)+"</span></li>"; 
+                    rstHtml += "<li>참여작가 : <span>"+jex.null2Void(obj.EVENT_NM)+"</span></li>";                  
+                }
+                rstHtml += "</ul>";
+                rstHtml += "<p class=\"btn_more\"><a href=\"javascript:linkMenuPage('dgi_fac_sub3_3','dgi_fac_sub3','0','com_ebz_dgi_main.act')\" title='전시행사안내 더보기'>더보기</a></p>";
+                break;
+            case 78://78 : 메인 > 이벤트 
+                rstHtml = "";
+                rstHtml += "<ul class=\"banner_list\">";
+                
+                for(var i=0; i<arrBbsList.length; i++){
+                        var obj = arrBbsList[i];
+                        rstHtml +="<li class=\"banner_03_"+(i+1)+" slide_content\">";
+                        rstHtml +="<a href=\"javascript:goBbsPagePreMain("+jex.null2Void(obj.PUTUP_WRIT_SEQ)+",78,4)\"><img src=\""+jex.null2Void(obj.IMG_PATH_NM)+jex.null2Void(obj.IMG_FILE_NM)+"\" alt=\""+(i+1)+"번째 배너\"></a>";
+                        rstHtml +="</li>";
+                }
+                
+                rstHtml += "</ul>";
+                rstHtml += "<ul class=\"banner_pagging_btn\">";
+                rstHtml += "<li class=\"stall\"><a href=\"#none\"><span>멈춤</span></a></li>";
+                rstHtml += "<li class=\"play\"><a href=\"#none\"><span>재생</span></a></li>";
+                rstHtml += "</ul>";
+                
+                break;
+            default:
+        }
+    }
+    
+    return rstHtml;
+}
+
+/*
+ * 메뉴 key 에 따른 게시판 원장에 입력할 변수를 설정한다
+ * */
+function setParam(){
+    switch (subBbsKey){
+        case 1 ://1  : 메인                / 새소식
+            mainUrl = "com_ebz_hlp_main";
+            siteCd  = "03";
+            menuCd  = "A";
+            bbsId   = "NEW001";
+            locIdxBySub = 0;
+            rowCnt  = 7; 
+            menuId  = "hlp_hns_sub1";
+            menuNum = 0;
+            menuVal = "";
+            break;
+        case 2 ://2  : 메인                / 지역행사
+            mainUrl = "com_ebz_hlp_main";
+            siteCd  = "03";
+            menuCd  = "A";
+            bbsId   = "NOM021";
+            locIdxBySub = 1;
+            rowCnt  = 7;   
+            menuId  = "hlp_hns_sub3";
+            menuNum = 0;
+            menuVal = "";
+            break;
+        case 3 ://3  : 메인                / 이벤트
+            mainUrl = "com_ebz_hlp_main";
+            siteCd  = "03";
+            menuCd  = "A";
+            bbsId   = "EVE001";
+            locIdxBySub = 1;
+            rowCnt  = 3;   
+            menuId  = "hlp_hns_sub2";
+            menuNum = 0;
+            menuVal = "";
+            break;
+        case 4 ://4  : DGB소개             / 새소식
+            mainUrl = "com_ebz_hlp_main";
+            siteCd  = "03";
+            menuCd  = "J";
+            bbsId   = "NEW001";
+            locIdxBySub = 0;
+            rowCnt  = 3;  
+            menuId  = "hlp_hns_sub1";
+            menuNum = 0;
+            menuVal = "";
+            break;
+        case 5 ://5  : DGB소개             / 보도자료
+            mainUrl = "com_ebz_dgi_main";
+            siteCd  = "04";
+            menuCd  = "A";
+            bbsId   = "CRG001";
+            locIdxBySub = 1;
+            rowCnt  = 3;  
+            //menuId  = "dgi_new_sub1";
+            menuId  = "dgi_pub_sub2";
+            menuNum = 0;
+            menuVal = "";
+            break;
+        case 6 ://6  : 개인뱅킹            / 새소식
+            mainUrl = "com_ebz_hlp_main";
+            siteCd  = "03";
+            menuCd  = "B";
+            bbsId   = "NEW001";
+            locIdxBySub = 0;
+            rowCnt  = 3; 
+            menuId  = "hlp_hns_sub1";
+            menuNum = 0;
+            menuVal = "";
+            break;
+        case 7 ://7  : 기업뱅킹            / 새소식
+            mainUrl = "com_ebz_hlp_main";
+            siteCd  = "03";
+            menuCd  = "C";
+            bbsId   = "NEW001";
+            locIdxBySub = 0;
+            rowCnt  = 3;  
+            menuId  = "hlp_hns_sub1";
+            menuNum = 0;
+            menuVal = "";
+            break;
+        case 8 ://8  : 지역사회공헌        / 지역보도자료
+            mainUrl = "com_ebz_lcc_main";
+            siteCd  = "05";
+            menuCd  = "A";
+            bbsId   = "CRG001";
+            locIdxBySub = 0;
+            rowCnt  = 2;  
+            menuId  = "lcc_act_sub1";
+            menuNum = 0;
+            menuVal = "";
+            break;
+        case 9 ://9  : 지역사회공헌        / 지역사회활동
+            mainUrl = "com_ebz_lcc_main";
+            siteCd  = "05";
+            menuCd  = "A";
+            bbsId   = "GAL004";
+            locIdxBySub = 1;
+            rowCnt  = 3;  
+            menuId  = "lcc_act_sub2";
+            menuNum = 0;
+            menuVal = "";
+            break;
+        case 26://26 : DGB패밀리           / DGB가족행복센터
+            mainUrl = "com_ebz_dfm_main";
+            siteCd  = "33";
+            menuCd  = "A";
+            bbsId   = "NOT006";
+            locIdxBySub = 0;
+            rowCnt  = 1;  
+            menuId  = "dfm_dhc_sub3";
+            menuNum = 0;
+            menuVal = "";
+            break;
+        case 27://27 : DGB패밀리          / 내가상담사
+            mainUrl = "com_ebz_dfm_main";
+            siteCd  = "11";
+            menuCd  = "A";
+            bbsId   = "NOM084";
+            locIdxBySub = 1;
+            rowCnt  = 0;  
+            menuId  = "dfm_dhc_sub2";
+            menuNum = 2;
+            menuVal = "";
+            break;
+        case 10://10 : DGB패밀리           / 퇴직행우동정
+            mainUrl = "com_ebz_dfm_main";
+            siteCd  = "32";
+            menuCd  = "A";
+            bbsId   = "NOT016";
+            locIdxBySub = 2;
+            rowCnt  = 4;  
+            menuId  = "dfm_reg_sub7";
+            menuNum = 0;
+            menuVal = "";
+            break;
+        case 11://11 : DGB패밀리           / 혼사
+            mainUrl = "com_ebz_dfm_main";
+            siteCd  = "32";
+            menuCd  = "A";
+            bbsId   = "NOM075";
+            locIdxBySub = 3;
+            rowCnt  = 1;  
+            menuId  = "dfm_reg_sub3";
+            menuNum = 0;
+            menuVal = "dfm_reg_sub3_1";
+            break;
+        case 12://12 : DGB패밀리           / 조사
+            mainUrl = "com_ebz_dfm_main";
+            siteCd  = "32";
+            menuCd  = "A";
+            bbsId   = "NOM076";
+            locIdxBySub = 4;
+            rowCnt  = 1;  
+            menuId  = "dfm_reg_sub3";
+            menuNum = 1;
+            menuVal = "dfm_reg_sub3_2";
+            break;
+        case 13://13 : 베스트오브베스트    / 신규 베스트 of 베스트
+            mainUrl = "com_ebz_bob_main";
+            siteCd  = "12";
+            menuCd  = "A";
+            bbsId   = "ADV003";
+            locIdxBySub = 0;
+            rowCnt  = 1;  
+            menuId  = "bob_sbb_sub2";
+            menuNum = 0;
+            menuVal = "";
+            break;
+        case 14://14 : 베스트오브베스트    / 맛집 멋집 방문기
+            mainUrl = "com_ebz_bob_main";
+            siteCd  = "12";
+            menuCd  = "A";
+            bbsId   = "ADV005";
+            locIdxBySub = 1;
+            rowCnt  = 2;  
+            menuId  = "bob_foo_sub1";
+            menuNum = 0;
+            menuVal = "";
+            break;
+        case 15://15 : eZ뱅크              / 새소식
+            mainUrl = "com_ebz_hlp_main";
+            siteCd  = "03";
+            menuCd  = "A";
+            bbsId   = "NEW001";
+            locIdxBySub = 0;
+            rowCnt  = 4; 
+            menuId  = "hlp_hns_sub1";
+            menuNum = 0;
+            menuVal = "";
+            break;
+            break;
+        case 16://16 : eZ뱅크              / 이벤트      
+            mainUrl = "com_ebz_hlp_main";
+            siteCd  = "03";
+            menuCd  = "A";
+            bbsId   = "EVE001";
+            locIdxBySub = 1;
+            rowCnt  = 1;   
+            menuId  = "hlp_hvt_sub1";
+            menuNum = 0;
+            menuVal = "";
+            break;
+        case 17://17 : 사이버경주지점      / 공지사항
+            mainUrl = "com_ebz_cgj_main";
+            siteCd  = "08";
+            menuCd  = "A";
+            bbsId   = "NOT001";
+            locIdxBySub = 0;
+            rowCnt  = 3;  
+            menuId  = "cgj_svc_sub2";
+            menuNum = 0;
+            menuVal = "";
+            break;
+        case 18://18 : 사이버경주지점      / 이벤트
+            mainUrl = "com_ebz_cgj_main";
+            siteCd  = "08";
+            menuCd  = "A";
+            bbsId   = "EVE001";
+            locIdxBySub = 1;
+            rowCnt  = 1;  
+            menuId  = "cgj_svc_sub3";
+            menuNum = 0;
+            menuVal = "cgj_svc_sub3_1";
+            break;
+        case 19://19 : 사이버그린          / 공지사항
+            mainUrl = "com_ebz_cgr_main";
+            siteCd  = "07";
+            menuCd  = "A";
+            bbsId   = "NOT001";
+            locIdxBySub = 0;
+            rowCnt  = 3;  
+            menuId  = "cgr_grg_sub2";
+            menuNum = 0;
+            menuVal = "";
+            break;
+        case 20://20 : 사이버그린          / 환경뉴스
+            mainUrl = "com_ebz_cgr_main";
+            siteCd  = "07";
+            menuCd  = "A";
+            bbsId   = "NOM060";
+            locIdxBySub = 1; 
+            rowCnt  = 3;  
+            menuId  = "cgr_evi_sub5";
+            menuNum = 4;
+            menuVal = "cgr_evi_sub";
+            break;
+        case 21://21 : 사이버그린          / 이벤트
+            mainUrl = "com_ebz_cgr_main";
+            siteCd  = "07";
+            menuCd  = "A";
+            bbsId   = "EVE001";
+            locIdxBySub = 2;
+            rowCnt  = 1;  
+            menuId  = "cgr_grg_sub3";
+            menuNum = 0;
+            menuVal = "cgr_grg_sub3_1";
+            break;
+        case 22://22 : 사이버한수원        / 공지사항 
+            mainUrl = "com_ebz_chs_main";
+            siteCd  = "09";
+            menuCd  = "A";
+            bbsId   = "NOT001";
+            locIdxBySub = 0;
+            rowCnt  = 3;  
+            menuId  = "chs_svc_sub2";
+            menuNum = 0;
+            menuVal = "";
+            break;
+        case 23://23 : 사이버한수원        /  이벤트
+            mainUrl = "com_ebz_chs_main";
+            siteCd  = "09";
+            menuCd  = "A";
+            bbsId   = "EVE001";
+            locIdxBySub = 1;
+            rowCnt  = 1;  
+            menuId  = "chs_svc_sub3";
+            menuNum = 0;
+            menuVal = "chs_svc_sub3_1";
+            break;
+        case 24://24 : 사이버독도          / 공지사항
+            mainUrl = "com_ebz_cdd_main";
+            siteCd  = "06";
+            menuCd  = "A";
+            bbsId   = "NOT001";
+            locIdxBySub = 0;
+            rowCnt  = 3;  
+            menuId  = "cdd_bor_sub1";
+            menuNum = 0;
+            menuVal = "";
+            break;
+        case 25://25 : 사이버독도          / 이벤트
+            mainUrl = "com_ebz_cdd_main";
+            siteCd  = "06";
+            menuCd  = "A";
+            bbsId   = "EVE001";
+            locIdxBySub = 1;
+            rowCnt  = 1;
+            menuId  = "cdd_evt_sub1";
+            menuNum = 0;
+            menuVal = "";
+            break;
+        case 37://37 : 지역사랑 / 대구지역행사
+            mainUrl = "com_ebz_hlp_main";
+            siteCd  = "03";
+            menuCd  = "A";
+            bbsId   = "NOM021";
+            locIdxBySub = 0;
+            rowCnt  = 3;   
+            menuId  = "hlp_hre_sub1";
+            menuNum = 0;
+            menuVal = "";
+            break;
+        case 38://38 : 지역사랑 / 경북지역행사
+            mainUrl = "com_ebz_hlp_main";
+            siteCd  = "03";
+            menuCd  = "A";
+            bbsId   = "NOM021";
+            locIdxBySub = 1;
+            rowCnt  = 3;
+            menuId  = "hlp_hre_sub1";
+            menuNum = 0;
+            menuVal = "";
+            break;
+        case 39://39 : 혁신도시 / 은행소식
+            mainUrl = "com_ebz_cct_main";
+            siteCd  = "03";
+            menuCd  = "A";
+            bbsId   = "NEW001";
+            locIdxBySub = 0;
+            rowCnt  = 3;
+            menuId  = "cct_svc_sub1";
+            menuNum = 2;
+            menuVal = "";
+            break;
+        case 40://40 : 혁신도시 / 혁신도시뉴스
+            mainUrl = "com_ebz_cct_main";
+            siteCd  = "14";
+            menuCd  = "B";
+            bbsId   = "NOT001";
+            locIdxBySub = 1;
+            rowCnt  = 3;
+            menuId  = "cct_svc_sub2";
+            menuNum = 3;
+            menuVal = "";
+            break;
+        case 41://41 : 혁신도시 / 이벤트
+            mainUrl = "com_ebz_cct_main";
+            siteCd  = "14";
+            menuCd  = "A";
+            bbsId   = "EVE001";
+            locIdxBySub = 2;
+            rowCnt  = 1;
+            menuId  = "cct_svc_sub3";
+            menuNum = 0;
+            menuVal = "";
+            break;
+        case 42://42 : 카드몰 / 진행중인이벤트
+            mainUrl = "com_ebz_fpm_main";
+            siteCd  = "01";
+            menuCd  = "A";
+            bbsId   = "EVE001";
+            locIdxBySub = 0;
+            rowCnt  = 4;
+            menuId  = "fnm_fnc_sub6";
+            menuNum = 0;
+            menuVal = "fnm_fnc_sub6_1";
+            break;
+        case 43://43 : 카드몰 / 이벤트배너[사용X]
+            mainUrl = "com_ebz_fpm_main";
+            siteCd  = "01";
+            menuCd  = "A";
+            bbsId   = "EVE001";
+            locIdxBySub = 1;
+            rowCnt  = 1;
+            menuId  = "fnm_fnc_sub6";
+            menuNum = 0;
+            menuVal = "fnm_fnc_sub6_1";
+            break;
+        case 44://44 : 카드몰 / 당첨자 발표
+            mainUrl = "com_ebz_fpm_main";
+            siteCd  = "14";
+            menuCd  = "A";
+            bbsId   = "EVE001";
+            locIdxBySub = 2;
+            rowCnt  = 1;
+            menuId  = "fnm_fnc_sub6";
+            menuNum = 1;
+            menuVal = "fnm_fnc_sub6_2";
+            break;
+        case 45://45 : 카드몰 / 지난이벤트
+            mainUrl = "com_ebz_fpm_main";
+            siteCd  = "01";
+            menuCd  = "A";
+            bbsId   = "EVE001";
+            locIdxBySub = 0;
+            rowCnt  = 4;
+            menuId  = "fnm_fnc_sub6";
+            menuNum = 0;
+            menuVal = "fnm_fnc_sub6_1";
+            break;
+        case 36://36 : 금융지주(korea)  / DGB뉴스(보도자료)
+            EtcBbsListUrl   = "dfg_ebz_10122_bord";
+            EtcBbsDetailUrl = "dfg_ebz_10222_bord";
+            mainUrl = "ETC";
+            siteCd  = "30";
+            menuCd  = "A";      
+            bbsId   = "CRG006";
+            locIdxBySub = 0;
+            rowCnt  = 3;
+            break;
+        case 63://63 : 금융지주(kroea)  / DGB수요특강
+            EtcBbsListUrl   = "dfg_ebz_10128_bord";
+            EtcBbsDetailUrl = "dfg_ebz_10228_bord";
+            mainUrl = "ETC";
+            siteCd  = "30";
+            menuCd  = "A";
+            bbsId   = "NOM140";
+            locIdxBySub = 2;
+            rowCnt  = 1;
+            break;
+        case 28://28 : 금융지주(korea)  / IR뉴스/IR레터
+            EtcBbsListUrl   = "dfg_ebz_10103_bord";
+            EtcBbsDetailUrl = "dfg_ebz_10203_bord";
+            mainUrl = "ETC";
+            siteCd  = "30";
+            menuCd  = "A";
+            bbsId   = "RFN019";
+            locIdxBySub = 1;
+            rowCnt  = 3;
+            break;
+        case 29://29 : 금융지주(English)  / IR News
+            EtcBbsListUrl   = "dfg_ebz_10107_bord";
+            EtcBbsDetailUrl = "dfg_ebz_10207_bord";
+            mainUrl = "ETC";
+            siteCd  = "30";
+            menuCd  = "A";
+            bbsId   = "RFN025";
+            locIdxBySub = 0;
+            rowCnt  = 3;
+            break;
+        case 30://30 : 데이터시스템  / NOTICE(DGB금융그룹소식)
+            EtcBbsListUrl   = "dds_ebz_10101_bord";
+            EtcBbsDetailUrl = "dds_ebz_10201_bord";
+            mainUrl = "ETC";
+            siteCd  = "31";
+            menuCd  = "A";
+            bbsId   = "NEW003";
+            locIdxBySub = 0;
+            rowCnt  = 3;
+            break;
+        case 31://31 : 데이터시스템  / NEWS(공지사항)
+            EtcBbsListUrl   = "dds_ebz_10102_bord";
+            EtcBbsDetailUrl = "dds_ebz_10202_bord";
+            mainUrl = "ETC";
+            siteCd  = "31";
+            menuCd  = "A";
+            bbsId   = "NOT009";
+            locIdxBySub = 1;
+            rowCnt  = 3;
+            break;
+        case 32://32 :  독사모 / 공지사항
+            mainUrl = "dlo_ebz_main";
+            siteCd  = "06";
+            menuCd  = "A";
+            bbsId   = "NOT001";
+            locIdxBySub = 0;
+            rowCnt  = 4;  
+            menuId  = "dok_new_sub1";
+            menuNum = 0;
+            menuVal = "";
+            break;
+        case 33://33 :  독사모 / 언론보도
+            mainUrl = "dlo_ebz_main";
+            siteCd  = "06";
+            menuCd  = "A";
+            bbsId   = "CRG001";
+            locIdxBySub = 1;
+            rowCnt  = 4;  
+            menuId  = "dok_new_sub2";
+            menuNum = 0;
+            menuVal = "";
+            break;
+        case 34://34 :  상해지점(korea) / 공지사항
+            EtcBbsListUrl   = "dcn_ebz_10102_bord";
+            EtcBbsDetailUrl = "dcn_ebz_10202_bord";
+            mainUrl = "ETC";
+            siteCd  = "16";
+            menuCd  = "A";
+            bbsId   = "NOT012";
+            locIdxBySub = 0;
+            rowCnt  = 4;
+            break;
+        case 35://35 :  상해지점(중문) / 공지사항
+            EtcBbsListUrl   = "dcn_ebz_10101_bord";
+            EtcBbsDetailUrl = "dcn_ebz_10201_bord";
+            mainUrl = "ETC";
+            siteCd  = "16";
+            menuCd  = "A";
+            bbsId   = "NOT011";
+            locIdxBySub = 0;
+            rowCnt  = 4;
+            break;
+        case 46 ://46  : 메인                / 이벤트
+            mainUrl = "com_ebz_hlp_main";
+            siteCd  = "01";
+            menuCd  = "A";
+            bbsId   = "EVE001";
+            locIdxBySub = 2;
+            rowCnt  = 3;   
+            menuId  = "hlp_hvt_sub1";
+            menuNum = 0;
+            menuVal = "";
+            break;  
+        case 50 ://50  : DGB뉴스
+            mainUrl = "com_ebz_dgi_main";
+            siteCd  = "04";
+            menuCd  = "A";
+            bbsId   = "CRG001";
+            locIdxBySub = 1;
+            rowCnt  = 3;  
+            menuId  = "dgi_new_sub1";
+            menuNum = 0;
+            menuVal = "";
+            break;
+        case 70://70 : 카드이벤트
+            mainUrl = "com_ebz_fpm_main";
+            siteCd  = "01";
+            menuCd  = "A";
+            bbsId   = "EVE001";
+            locIdxBySub = 1;
+            rowCnt  = 4;
+            menuId  = "fnm_fnc_sub6";
+            menuNum = 0;
+            menuVal = "fnm_fnc_sub6_1";
+            break;
+        case 71://71 : 참여이벤트
+            mainUrl = "com_ebz_fpm_main";
+            siteCd  = "01";
+            menuCd  = "A";
+            bbsId   = "EVE001";
+            locIdxBySub = 2;
+            rowCnt  = 4;
+            menuId  = "fnm_fnc_sub6";
+            menuNum = 0;
+            menuVal = "fnm_fnc_sub6_2";
+            break;
+        case 72://72 : BC공동이벤트
+            mainUrl = "com_ebz_fpm_main";
+            siteCd  = "01";
+            menuCd  = "A";
+            bbsId   = "EVE001";
+            locIdxBySub = 0;
+            rowCnt  = 4;
+            menuId  = "fnm_fnc_sub6";
+            menuNum = 0;
+            menuVal = "fnm_fnc_sub6_3";
+            break;
+        case 73://73 : 당첨자보기
+            mainUrl = "com_ebz_fpm_main";
+            siteCd  = "01";
+            menuCd  = "A";
+            bbsId   = "EVE001";
+            locIdxBySub = 3;
+            rowCnt  = 1;
+            menuId  = "fnm_fnc_sub6";
+            menuNum = 1;
+            menuVal = "fnm_fnc_sub6_4";
+            break;
+        case 74://74 : 카드이벤트
+            mainUrl = "com_ebz_fpm_main";
+            siteCd  = "01";
+            menuCd  = "A";
+            bbsId   = "EVE001";
+            locIdxBySub = 0;
+            rowCnt  = 4;
+            menuId  = "fnm_fnc_sub6";
+            menuNum = 0;
+            menuVal = "fnm_fnc_sub6_1";
+            break;
+        
+        case 75://75 : 금융서비스 > 재테크 > 시장정보
+            mainUrl = "com_ebz_fsv_main";
+            siteCd  = "02";
+            menuCd  = "A";
+            bbsId   = "RFN051";
+            locIdxBySub = 1;
+            rowCnt  = 3;
+            menuId  = "fsv_fnz_sub1";
+            menuNum = 0;
+            menuVal = "fsv_fnz_sub1_1";
+            break;
+        case 76://76 : 금융서비스 행복은퇴설계센터 행복파트너 소식 행복소식지
+            mainUrl = "com_ebz_fsv_main";
+            siteCd  = "02";
+            menuCd  = "A";
+            bbsId   = "NOM011";
+            locIdxBySub = 2;
+            rowCnt  = 2;
+            menuId  = "fsv_fnr_sub4";
+            menuNum = 0;
+            menuVal = "fsv_fnr_sub4_1";
+            break;
+        case 77://77 : DGB갤러리
+            mainUrl = "com_ebz_dgi_main";
+            siteCd  = "04";
+            menuCd  = "A";
+            bbsId   = "NOM142";
+            locIdxBySub = 3;
+            rowCnt  = 1;  
+            menuId  = "dgi_fac_sub3";
+            menuNum = 0;
+            menuVal = "dgi_fac_sub3_3";
+            break;
+        case 78://78 : 이벤트배너
+            mainUrl = "com_ebz_hlp_main";
+            siteCd  = "01";
+            menuCd  = "A";
+            bbsId   = "EVE001";
+            locIdxBySub = 4;
+            rowCnt  = 3;  
+            menuId  = "hlp_hns_sub2";
+            menuNum = 0;
+            menuVal = "hlp_hns_sub2_1";
+            break;
+        default:
+    }
+    jObj._BBS_LIST_URL        = EtcBbsListUrl;   //위성사이트 게시판 URL
+    jObj._BBS_DETAIL_URL      = EtcBbsDetailUrl; //위성사이트 상세 URL
+    
+    jObj._BBS_ID         = bbsId   ;    //게시판아이디
+    jObj._BBS_SITECD     = siteCd  ;    //게시판사이트구분
+    jObj._BBS_MENUCD     = menuCd  ;    //게시판메뉴구분
+    jObj._BBS_RCOUNT     = rowCnt  ;    //출력갯수
+    jObj._BBS_MAIN_ACT   = mainUrl ;    //호출 게시판의 MAIN_URL(dgb.co.kr/?????.act)
+    jObj._BBS_MENU_ID    = menuId;
+    jObj._BBS_MENU_NUM   = menuNum;
+    jObj._BBS_MENU_VAL   = menuVal;
+
+    /* N개이상 SUBMAIN BBS 호출시  세션변수 재갱신 */
+    if(locIdxBySub > 0){
+        pObj = dataCtrl.getObjData('TEMP_SUBBBS');
+        arrJOBj = pObj._TEMP_ARR;
+    }
+
+    arrJOBj[locIdxBySub]  = jObj;
+    pObj._TEMP_ARR        = arrJOBj;
+
+    dataCtrl.setObjData('TEMP_SUBBBS', JSON.stringify(pObj));
+    arrSubBbsKeySet[locIdxBySub] = subBbsKey;
+
+    pObj._BBS_ARR_SUB_KEY = arrSubBbsKeySet;   //submain bbs keyset 
+}
+
+//[위성]데이터 시스템 리스트 바로가기
+function goBbsMain(){
+    var btn = $(".main_tab_menu li");
+    
+    if(btn.eq(0).attr("class")=="on"){
+        location.href = "/dds_ebz_10101_bord.act";
+    }else if(btn.eq(1).attr("class")=="on"){
+        location.href = "/dds_ebz_10102_bord.act";
+    }
+    
+}
+
+/*
+ * 위성사이트 게시판호출 [리스트/상세]
+ * */
+function goEtcBbsPage(seq , subKey , locIdx){
+    var tObj = {};
+    tObj = dataCtrl.getObjData('TEMP_SUBBBS');
+
+    /* 서브메인 로드 시점에 날아간 최종값 이전 DATA 복원 */
+    arrJOBj = tObj._TEMP_ARR;
+    jObj = arrJOBj[locIdx];
+    
+    if(seq == 0){
+        jObj._BBS_CALL_CN    = "11"    ;    //게시판호출내용 11:리스트  22:상세
+    }else{
+        jObj._BBS_CALL_CN    = "22"    ;    //게시판호출내용 11:리스트  22:상세
+        jObj._BBS_WRITSEQ    = seq     ;    //게시물번호
+    }
+
+    pObj._BBS_CLK_IDX = locIdx;
+    arrJOBj[locIdx] = jObj;
+    dataCtrl.setObjData('BBS_DATA'        , JSON.stringify(pObj           ));
+    dataCtrl.setObjData('BBS_DATA'+ subKey, JSON.stringify(arrJOBj[locIdx]));
+
+    if(seq == 0){
+        location.href = "/" + jObj._BBS_LIST_URL + ".act";
+    }else{
+        location.href = "/" + jObj._BBS_DETAIL_URL + ".act";
+    }
+}
+
+
+function goBbsPagePreMainCD(seq,subKey,locIdx,_code){
+    var bankUrl = _CodeMgr.getCodeMsg("CODE_URL",_code);
+    var tObj = {};
+    tObj = dataCtrl.getObjData('TEMP_SUBBBS');
+    
+    /* 서브메인 로드 시점에 날아간 최종값 이전 DATA 복원 */
+    arrJOBj = tObj._TEMP_ARR;
+    jObj = arrJOBj[locIdx];
+    
+    if(seq == 0){
+        jObj._BBS_CALL_CN    = "11"    ;    //게시판호출내용 11:리스트  22:상세
+    }else{
+        jObj._BBS_CALL_CN    = "22"    ;    //게시판호출내용 11:리스트  22:상세
+        jObj._BBS_WRITSEQ    = seq     ;    //게시물번호
+    }
+
+    dataCtrl.delObjData("MENU_LOCATION");
+    //locIdx는  setParam 에 locIdxBySub 와 같은 숫자로 맞춰야함 실제로 임시로 담기는 obj에 배열번호임... -_-
+    pObj._BBS_CLK_IDX = locIdx;
+    
+    arrJOBj[locIdx] = jObj;
+    dataCtrl.setObjData('BBS_DATA'        , JSON.stringify(pObj));
+    dataCtrl.setObjData('BBS_DATA'+ subKey, JSON.stringify(arrJOBj[locIdx]));
+    
+    location.href = bankUrl + jObj._BBS_MAIN_ACT + ".act";
+}
+
+/*
+ * 게시판 호출(LIST 호출시 seq:0)
+ * */
+function goBbsPagePreMain(seq,subKey,locIdx){ 
+    
+    if (subKey == 3 && locIdx == 0){
+        subKey = 78;
+        locIdx = 4;
+    }
+    var bankUrl = _CodeMgr.getCodeMsg("CODE_URL","1002");
+    var tObj = {};
+    tObj = dataCtrl.getObjData('TEMP_SUBBBS');
+//  alert(JSON.stringify(tObj));
+    /* 서브메인 로드 시점에 날아간 최종값 이전 DATA 복원 */
+    arrJOBj = tObj._TEMP_ARR;
+    jObj = arrJOBj[locIdx];
+    
+    if(seq == 0){
+        jObj._BBS_CALL_CN    = "11"    ;    //게시판호출내용 11:리스트  22:상세
+    }else{
+        jObj._BBS_CALL_CN    = "22"    ;    //게시판호출내용 11:리스트  22:상세
+        jObj._BBS_WRITSEQ    = seq     ;    //게시물번호
+    }
+//  alert(JSON.stringify(jObj));
+    dataCtrl.delObjData("MENU_LOCATION");
+    //locIdx는  setParam 에 locIdxBySub 와 같은 숫자로 맞춰야함 실제로 임시로 담기는 obj에 배열번호임... -_-
+    pObj._BBS_CLK_IDX = locIdx;
+    arrJOBj[locIdx] = jObj;
+    
+    dataCtrl.setObjData('BBS_DATA'        , JSON.stringify(pObj));
+    dataCtrl.setObjData('BBS_DATA'+ subKey, JSON.stringify(arrJOBj[locIdx]));
+    
+    location.href = bankUrl + jObj._BBS_MAIN_ACT + ".act";
+}
+
+function articleShow(id, el){
+    $(el).parent().parent().find("li").removeClass("on");
+    $(el).parent().addClass("on");
+    $("article").hide();
+    $("#" + id).show();
+}
+
+/**************************************************************************************/
+/** 메인(실제 게시판이 펼쳐질) 배포 함수영역  (복사하여 메인.js onload시 기동)       **/
+/**************************************************************************************/
+function callBbsPage(){
+    
+    var pObj = {};
+    var arrTemp = new Array();
+    var subBbsKeyForMain = 0;
+    pObj = dataCtrl.getObjData('BBS_DATA');
+    
+    if(pObj != null){
+        arrTemp = pObj._BBS_ARR_SUB_KEY;
+        subBbsKeyForMain = arrTemp[pObj._BBS_CLK_IDX];
+    
+        var jObj = {};
+        jObj = dataCtrl.getObjData('BBS_DATA' + subBbsKeyForMain);
+        
+        if(jObj._BBS_CALL_CN != undefined && jObj._BBS_CALL_CN != null && jObj._BBS_CALL_CN != ""){
+            if(jObj._BBS_CALL_CN == "11"){//리스트호출
+                
+                $("#ifr").attr("src","bbs_ebz_10010_bord.act");
+                
+            }else if(jObj._BBS_CALL_CN == "22"){//상세호출
+                
+                $("#ifr").attr("src","bbs_ebz_10020_bord.act");
+                
+            }
+        }
+    }
+}

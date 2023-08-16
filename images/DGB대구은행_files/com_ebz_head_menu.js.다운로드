@@ -1,0 +1,2078 @@
+var topMenu_H 	= "";
+
+var topMenu 	= "";
+var topMenuSub = "";
+var topMenuDepth2 	= "";
+var topMenuDepth3 	= "";
+var leftMenu 	= [];
+var timeout     	= 3000;
+var closetimer		= 1;
+var ddmenuitem 		= 0;
+var ddmenuitemTop	= 0;	
+var addCls = "";
+var tapmenuid = "";
+
+var iCnt = 0; 
+var mtabposition = 0;
+var stabposition = 0;
+var etabposition = 0;
+
+var totMenu = "";
+
+var dgiHtml = "";
+$(function() {
+	if(menu.length < 1) {
+		return;
+	}
+	if (menu[0].id.substr(0,3) == "dgi")
+	{
+		addCls = " dgb_intro";
+	}else if (menu[0].id.substr(0,3) == "fnm")
+	{
+		addCls = " f_mall";
+	}else if (menu[0].id.substr(0,3) == "fsv")
+	{
+		addCls = " f_service";
+	}else if (menu[0].id.substr(0,3) == "hlp")
+	{
+		addCls = " c_center";
+	}else{
+		addCls = "";
+	}
+
+	topMenu_H = '<div class="snb_dv'+addCls+'">';
+	topMenu_H += "<p class=\"report\"><a href=\"javascript:showSiteMap();\" title=\"전체메뉴\" id=\"all_mnu_view\"><span>전체메뉴</span></a></p>";
+	topMenu_H += '<ul class="sub menu_depth1" id="topMenuId">';
+
+	topMenuDepth2 = '';
+	topMenuDepth3 = '';
+	topMenuSub = "";
+	
+	$.each(menu, function(i,v) {	
+		if(null != v.view && v.view == "true") {
+		    topMenu = topMenu + "<li id='"+v.id+"' class='slide_menu' data-onepage='"+v.onepage+"' data-url='"+v.url+"' data-type='"+v.type+"' data-sec='"+v.loginKeepHrSec+"'><a title="+v.name+" href='javascript:void(0);'>"+v.name+"<span class='right_bg'></span></a>";
+			tapmenuid = v.id;
+	
+			var topSub = drawDepth2(v);
+			//drawSubTop(v);
+			topMenu += topSub; 
+			topMenu = topMenu + "</li>";
+
+			iCnt++;
+
+		}
+	});
+	
+	topMenu = topMenu + "</ul></div>";	
+	
+	var $topMenuObj = $(".dgb_snb");
+	
+	$topMenuObj.append(topMenu_H + topMenu);
+	
+
+
+	$topMenuObj.before(totMenu);
+	
+
+
+
+	$('.langs ul').hide();
+	$('.langs ul li').css('background','url("")');
+	$('.langs').hover(
+		function(){
+			$('.langs ul').show();
+		},
+		function(){
+			$('.langs ul').hide();
+		}
+	);
+	$('.langs ul li').css('background-image','url("")');
+
+	$('.slide_menu').live("mouseover focus", function(e){
+		fcsClick = "init";
+		var ind = $('.slide_menu').index(this);
+		
+		$('.slide_menu').removeClass('on');
+		$(this).addClass("on");
+		
+		var ver = ieVersionCheck();
+		$('.subMenu').hide();
+		$('.slideMenu_depth_3').hide();
+		$(this).find('.subMenu').show();
+
+	});
+
+
+	$('.dgb_snb').live("mouseleave", function(){
+		$('.slide_menu').removeClass('on');
+		$('.slideMenu_depth_2 li').removeClass('on');
+		$(".slideMenu_depth_3 > li > ul").hide();
+		
+		var ver = ieVersionCheck();
+
+		$('.subMenu').hide();
+
+	});
+
+	$('.slideMenu_depth_3 li ul').hide();
+	$('.slideMenu_depth_3 li ul.on').show();
+
+	$('.slideMenu_depth_2 li').live("mouseover focus", function(e){
+		var indd = $('.subMenu li').index(this);
+		$('.slideMenu_depth_2 li').removeClass('on');
+		$(this).addClass('on');
+		/*$('.slideMenu_depth_3').hide();// 웹접근성 수정
+		$(this).find('.slideMenu_depth_3').show();*/
+	});
+
+
+	/*$('#topMenuId li').bind('click', function (e){
+		if(!$(this).hasClass("report")){
+			
+			mainMenuOpen();
+		}
+	});	*/
+	
+	$('#topMenuId > li').bind('click', mainMenuOpen);	
+	$('.slideMenu_depth_2 li').bind('click', mainSubMenuOpen);	
+	$('.slideMenu_depth_3 > li > ul > li').bind('click', mainSubMenuOpen);
+
+	$('.report').live("mouseover focus", function(e){
+		
+		$('.slide_menu').removeClass('on');
+		$('.slideMenu_depth_2 li').removeClass('on');
+		$(".slideMenu_depth_3 > li > ul").hide();
+		$('.subMenu').hide();
+	});
+
+
+	$('#sub_main_Cont').live("focus", function(e){
+
+		$('.slide_menu').removeClass('on');
+		$('.slideMenu_depth_2 li').removeClass('on');
+		$(".slideMenu_depth_3 > li > ul").hide();
+		$('.subMenu').hide();
+	});
+
+});
+function ieVersionCheck(){
+	var word;
+	var version = "N/A";
+
+	var agent = navigator.userAgent.toLowerCase();
+	var name  = navigator.appName;
+
+	if (name == "Microsoft Internet Explorer"){
+		word = "msie ";
+	}else{
+		if (agent.search("trident")>-1) word = "trident/.*rv:"; // ie 11
+		else if (agent.search("edge/")>-1) word = "edge/"; // edge
+	}
+	var reg = new RegExp(word+"([0-9]{1,})(\\.{0,}[0-9]{0,1})");
+	if (reg.exec(agent) != null) version = RegExp.$1 + RegExp.$2;
+	
+	if (version == '10.0' && agent.search("trident")>-1)
+	{
+		version = '10.w';
+	}
+
+	return version;
+	
+}
+
+
+function drawDepth2(v){
+	
+	var html = "";
+	topMenuSub = "";
+	if(v.sub.length > 0){
+		topMenuSub = topMenuSub + '<div class="subMenu"><ul class="slideMenu_depth_2">';
+		var i = 0;
+		$.each(v.sub , function( sui , suv ){
+		    // 20201021 새창열기기능을 위해 type 정보 추가
+		    if (jex.null2Void(suv.type) != "" )
+		    {
+                topMenuDepth2 = topMenuDepth2 + "<li id='"+suv.id+"' data-type='" + suv.type+ "'  data-url='" + suv.url+ "'><a href='javascript:void(0);'>"+suv.name+"</a>";
+		    }
+		    else
+	        {
+		        topMenuDepth2 = topMenuDepth2 + "<li id='"+suv.id+"'><a href='javascript:void(0);'>"+suv.name+"</a>";
+	        }
+
+			if (v.type == "winup")
+			{
+				
+			}else{
+				if(suv.sub){
+					drawDepth3(suv, suv.id);
+					topMenuDepth2 += topMenuDepth3;
+				}/*else{
+					topMenuDepth3 = topMenuDepth3 + "<ul></ul>"
+				}*/
+			}
+			topMenuDepth2 = topMenuDepth2 + "</li>";
+			i++;
+			etabposition++;
+		});
+		
+		topMenuSub += topMenuDepth2 + "</ul>";
+
+		
+		topMenuSub += drawTopEtc(tapmenuid);
+		topMenuSub += drawFavorLayer();
+		topMenuSub += "</div>";
+		topMenuDepth2 = "";
+		topMenuDepth3 = "";
+	}
+	etabposition = 0;
+
+	html = topMenuSub;
+	return html;
+}
+
+function drawDepth3(v, parent_id){
+	topMenuDepth3 = '<div class="slideMenu_depth_3">'; 
+	if(v != null && v.sub.length > 0){
+		topMenuDepth3 = topMenuDepth3 + '<ul>';
+		var i = 0;
+		$.each(v.sub , function( sui , suv ){
+			if (suv.type == "winup")
+			{
+				if (suv.id == "fnm_fnc_sub6_3" || suv.id == "hlp_hab_sub6_4" || suv.id == "hlp_hab_sub6_6" || suv.id == "hlp_hab_sub6_7" || suv.id =="fsv_fna_sub7_9"){
+					topMenuDepth3 = topMenuDepth3 + "<li id='"+suv.id+"' data-url='"+suv.url+"' data-lg_accs_yn='undefined' data-cft_login_yn='undefined' data-hmp_login_yn='undefined' data-sec='undefined' data-depth='4' >"
+					+ "<a href='javascript:f_windowOpenFunc(\""+suv.url+"\");' title=\"새창으로 열기\">"+suv.name+"</a>";
+					topMenuDepth3 = topMenuDepth3 + "</li>";
+				}else{
+					topMenuDepth3 = topMenuDepth3 + "<li id='"+suv.id+"' data-url='"+suv.url+"' data-lg_accs_yn='undefined' data-cft_login_yn='undefined' data-hmp_login_yn='undefined' data-sec='undefined' data-depth='4' >"
+					+ "<a href='javascript:windowCalFunc(\""+suv.id+"\");' title=\"새창으로 열기\">"+suv.name+"</a>";
+					topMenuDepth3 = topMenuDepth3 + "</li>";
+				}
+			}else if (suv.type == "main_move")
+			{
+				topMenuDepth3 = topMenuDepth3 + "<li id='"+suv.id+"' data-type='"+suv.type+"' data-url='"+suv.url+"' data-lg_accs_yn='undefined' data-cft_login_yn='undefined' data-hmp_login_yn='undefined' data-sec='undefined' data-depth='4' >"
+				+ "<a href='javascript:goSubMain(\'fpm\')'>"+suv.name+"</a>";
+				topMenuDepth3 = topMenuDepth3 + "</li>";
+				
+			}else{
+				topMenuDepth3 = topMenuDepth3 + "<li id='"+suv.id+"' data-url='"+suv.url+"' data-lg_accs_yn='undefined' data-cft_login_yn='undefined' data-hmp_login_yn='undefined' data-sec='undefined' data-depth='4' >"
+				+ "<a href='javascript:link4DepthMenuPage(\""+suv.id+"\", \""+parent_id+"\",\"0\", \""+mainPage + ".act\");'>"+suv.name+"</a>";
+				topMenuDepth3 = topMenuDepth3 + "</li>";
+			}
+			i++;
+		});
+		
+		topMenuDepth3 = topMenuDepth3 + "</ul></div>";
+	}
+}
+
+function depth3Click(obj, parent_id) {
+	var id    = $(obj).attr('id');
+	var depth = $(obj).attr('data-depth');
+	var loginKeepHrSec = $(obj).attr('data-sec')=="undefined" ? 600:$(obj).attr('data-sec');
+	var num   = id.substring(id.lastIndexOf('_')+1);
+
+	linkMenuPage(id, parent_id,'0', "/" + mainPage + ".act");
+	
+	//goDepth3Page($(obj).attr('data-url'), $(obj).attr('data-lg_accs_yn'), $(obj).attr('data-cft_login_yn'), $(obj).attr('data-hmp_login_yn'), id, num, depth, loginKeepHrSec, parent_id);	
+}
+
+function drawTopEtc(val){
+	var html = "";
+	var html_sub = "";
+	if (val == 'fnm_fnc' ){
+		html_sub = MenuDatForCard();
+		html = "<ul class=\"slideMenu_card\" id=\"slideMenu_card\"></ul>";		
+	}else if( val == 'fnm_fnl'){
+		html_sub = MenuDatForLoan();
+		html = "<ul class=\"slideMenu_card\" id=\"slideMenu_loan\"></ul>";
+	}else if( val == 'fnm_fnp'){
+		html_sub = MenuDatForDeposit();
+		html = "<ul class=\"slideMenu_card\" id=\"slideMenu_deposit\"></ul>";
+	}else if( val == 'fnm_fnf' || val == 'fnm_rap'){
+		var slideId = "slideMenu_fund";
+		if(val == 'fnm_rap')
+	    {
+		    slideId = "slideMenu_rap";
+	    }
+		//20210722 추천상품정보 노출제외 
+		//html_sub = MenuDatForFund(slideId);
+		html = "<ul class=\"slideMenu_card\" id=\""+slideId+"\"></ul>";
+	}else if( val == 'fnm_fne'){
+		html_sub = MenuDatForFne();
+		html = "<ul class=\"slideMenu_card\" id=\"slideMenu_fne\"></ul>";
+	}else if( val == 'fnm_fnr'){
+		html_sub = MenuDatForFnr();
+		html = "<ul class=\"slideMenu_card\" id=\"slideMenu_fnr\"></ul>";
+	}else if( val == 'fnm_fni'){
+ 		//20230504 보험/공제 추천상품정보 노출제외        	
+        //html_sub = MenuDatForFni();
+		html = "<ul class=\"slideMenu_card\" id=\"slideMenu_fni\"></ul>";
+	}else if( val == 'fnm_fns'){
+		html_sub = MenuDatForFns();
+		html = "<ul class=\"slideMenu_card\" id=\"slideMenu_fns\"></ul>";
+	}else{
+		
+		if (val == 'fsv_fna' || val == 'fsv_fnp' || val == 'fsv_fnr' || val == 'fsv_fnz' || val == 'fsv_fnc' || val == 'fsv_fnb' || val == 'fsv_fnh' || val == 'fsv_fnt' || val == 'fsv_fnu')
+		{
+			html_sub = MenuDatForFsv(val.substr(4));
+			html = "<ul class=\"slideMenu_card\" id=\"slideMenu_"+val.substr(4)+"\"></ul>";
+		}else if (val == 'hlp_hsd' || val == 'hlp_hms' || val == 'hlp_hab' || val ==  'hlp_hsg' || val ==  'hlp_hss' || val ==  'hlp_hls' || val ==  'hlp_hhy' || val ==  'hlp_hns')
+		{
+			html_sub = MenuDatForHlp(val.substr(4));
+			html = "<ul class=\"slideMenu_card\" id=\"slideMenu_"+val.substr(4)+"\"></ul>";
+		}else if (val == 'dgi_abt' || val == 'dgi_dgb' || val == 'dgi_pub' || val == 'dgi_inf' || val == 'dgi_fium' || val == 'dgi_bus' || val == 'dgi_fac' || val == 'dgi_sto')
+		{
+			html_sub = MenuDatForDgi(val.substr(4));
+			html = "<ul class=\"slideMenu_card\" id=\"slideMenu_"+val.substr(4)+"\"></ul>";
+		}else{
+			html = "<ul class=\"slideMenu_card\">"
+		+"	<li><img src=\"/img/common/card/slide_menu_card.gif\" alt=\"DGB쇼핑카드 이미지\"></li>"
+		+"	<li><p class=\"new_title_up\">쇼핑할인이 한 장의 카드로 끝!</p></li>"
+		+"	<li><p class=\"new_title_middle\">DGB쇼핑카드<p></li>"
+		+"	<li><p class=\"new_title_down\">국내에서 해외까지 온라인에서<br/>오프라인까지~</p></li>"
+		+"	<li><p class=\"new_title_btn\"><a href=\"#\" class=\"btn_type31 point\"><span>신청하기</span></a><a href=\"#\" class=\"btn_type31\"><span>내용보기</span></a></p></li>"
+		+"</ul>";
+		}
+	}
+	return html;
+}
+function getFavorMenu() {
+	var jexAjax = jex.createAjaxUtil("com_ebz_favor_menu_t001");
+
+	/* 조회조건 설정 */
+	/*jexAjax.set("MILE_SV_PSBLYN" , "Y");*/
+	
+	jexAjax.addOption("loading", true);
+	jexAjax.set("HDR_TRA_FLAG" , "L");
+	//임시ID
+	//임시ID
+	var obj = new Object();
+	obj = getLoginSessionInfo();
+	upspid = obj.USPS_ID;
+	if(upspid ==  null || upspid == "") {
+		upspid = "DGBUSR001";
+	}
+	jexAjax.set("USPS_ID" , upspid);
+	
+	/* 선택된 신용카드 혜택을 INREC 배열객체로 입력 */
+	var tempList = new Array();
+	$.each( $("#dataBody").find(":checkbox:checked"), function(i, v) {
+		var obj = new Object();
+		obj.SCRN_PRGRM_NM = v.value;
+		tempList[tempList.length] = obj;
+	});
+
+	jexAjax.set("REC1" , tempList);
+	//var obj = new Object();	
+	//obj = getLoginSessionInfo();
+	
+	jexAjax.execute(function(dat) {
+        if(dat != null && dat != "") {
+        	favorData = JSON.parse(dat.FAVORITE_MENU);   
+            var showHtml = drawTopFavorMenu(); 
+            $(".new_dgb_icon_menu_list").each(function(i) {
+            	$(".new_dgb_icon_menu_list").eq(i).html(showHtml);
+            });
+        }
+	});
+}
+
+function drawFavorLayer() {	
+	var html = ""
+	+"<ul class=\"slideMenu_icon\">"
+	+"	<li><p class=\"new_slide_icon_title\"><span>DGB 자주쓰는 메뉴</span><a href=\"javascript:openFavorMenuPop();\" title=\"새창으로 열기\"><img src=\"/img/common/btn/ebz_btn_setting2.gif\" alt=\"설정\"></a></p></li>"
+	+"<li>"
+	+"<ul class=\"new_dgb_icon_menu_list\" id=\"favorLayer\">";
+	html += drawTopFavorMenu();
+	html +="</ul>";
+	html +="</li>";
+	html +="</ul>";
+	return html;
+}
+function drawTopFavorMenu() {
+	var html = "";
+	if(favorData.length > 0) {
+		html += "	<li class=\"slideMenu_icon_line\">";
+		for(var i=0; i < favorData.length; i++) {
+			var favorLink = findFavorLink(favorData[i]["SCRN_PRGRM_NM"]);
+			var favorName = findFavorName(favorData[i]["SCRN_PRGRM_NM"]);
+			var favorImg = "";
+			var favorNum = "";
+			var tempNum = favorData[i]["SCRN_PRGRM_NM"].split("_");			
+			favorNum = (tempNum[1]*1);	
+			if (favorData.length == i+1)
+			{
+				if(favorNum==14) {
+					html += "		<a href=\"javascript:#none\" title=\"새창으로 열기\" onclick=\""+favorLink+"return false;\"><p class=\"new_slide_icon1\"><img src=\"/img/common/btn/slide_menu_ico_"+favorNum+".png\" alt=\""+favorName+"\"><span>"+favorName+"</span></p></a>";
+				} else {
+					html += "		<a href=\"javascript:"+favorLink+"\"><p class=\"new_slide_icon1\"><img src=\"/img/common/btn/slide_menu_ico_"+favorNum+".png\" alt=\""+favorName+"\"><span>"+favorName+"</span></p></a>";				
+				}
+
+			}else{
+
+				if(favorNum==14) {
+					html += "		<a href=\"javascript:#none\" title=\"새창으로 열기\" onclick=\""+favorLink+"return false;\"><p class=\"new_slide_icon1\"><img src=\"/img/common/btn/slide_menu_ico_"+favorNum+".png\" alt=\""+favorName+"\"><span>"+favorName+"</span></p></a>";
+				} else {
+					html += "		<a href=\"javascript:"+favorLink+"\"><p class=\"new_slide_icon1\"><img src=\"/img/common/btn/slide_menu_ico_"+favorNum+".png\" alt=\""+favorName+"\"><span>"+favorName+"</span></p></a>";				
+				}
+			}
+			if(i==1 || i==3) {
+				html += "</li>";
+				html += "	<li class=\"slideMenu_icon_line\">";
+			}
+		}
+		html +="	</li>";
+		
+	} else {
+		html += "	<li class=\"slideMenu_icon_line\">"
+			+"		<a href=\"javascript:bankingLinkMenuPage('4', 'X010101', 'A010101', 'A020101', 'inq', 'com_ebz_pib_main', 'com_ebz_cib_main')\"><p class=\"new_slide_icon1\"><img src=\"/img/common/btn/slide_menu_ico_1.png\" alt=\"계좌조회\"><span>계좌조회</span></p></a>"
+			+"		<a href=\"javascript:bankingLinkMenuPage('4', 'X020101', 'A010201', 'A020201', 'rem', 'com_ebz_pib_main', 'com_ebz_cib_main');\"><p class=\"new_slide_icon2\"><img src=\"/img/common/btn/slide_menu_ico_3.png\" alt=\"즉시이체\"><span>즉시이체</span></p></a>"
+			+"	</li>"
+			+"	<li class=\"slideMenu_icon_line\">"
+			//+"		<a href=\"javascript:linkMenuPage('fnm_fnp_sub1_1', 'fnm_fnp_sub1', '0', 'com_ebz_fpm_main.act');\"><p class=\"new_slide_icon1\"><img src=\"/img/common/btn/slide_menu_ico_5.png\" alt=\"예금 인터넷 신규\"><span>예금 인터넷 신규</span></p></a>" //예적금 신규로 메뉴 변경
+			+"		<a href=\"javascript:goSubMain('fpm');\"><p class=\"new_slide_icon1\"><img src=\"/img/common/btn/slide_menu_ico_5.png\" alt=\"예금 인터넷 신규\"><span>예적금 신규</span></p></a>"
+			+"		<a href=\"javascript:linkMenuPage('fnm_fnl_sub1_3', 'fnm_fnl_sub1', '0', 'com_ebz_fpm_main.act');\"><p class=\"new_slide_icon2\"><img src=\"/img/common/btn/slide_menu_ico_7.png\" alt=\"대출 인터넷 신규\"><span>대출 인터넷 신규</span></p></a>"
+			+"	</li>"
+			+"	<li class=\"slideMenu_icon_line\">"
+			+"		<a href=\"javascript:bankingLinkMenuPage('4', 'X030101', 'A010301', 'A020301', 'gro', 'com_ebz_pib_main', 'com_ebz_cib_main');\"><p class=\"new_slide_icon1\"><img src=\"/img/common/btn/slide_menu_ico_19.png\" alt=\"공과금납부\"><span>공과금납부</span></p></a>"
+			+"		<a href=\"#none\" title=\"새창으로 열기\" onclick=\"javascript:window.open('https://banking.dgb.co.kr/fst_ebz_20010_1010.act','', 'width=763, height=600, toolbar=no, scrollbars=yes, resizable=no');return false;\"><p class=\"new_slide_icon2\"><img src=\"/img/common/btn/slide_menu_ico_14.png\" alt=\"안전계좌조회\"><span>안전계좌조회</span></p></a>"
+			+"	</li>";
+			
+	}
+		
+	
+
+	return html;
+}
+function openFavorMenuPop() {
+	
+	var obj = new Object();
+	obj = getLoginSessionInfo();
+	if(obj.USPS_ID == null || obj.USPS_ID == "") {
+		alert("로그인 이후에 서비스가 가능합니다.");
+		loginPage();
+	} else {
+		window.open("com_ebz_favor_menu.act","favorMenuPopup","width=448,height=700,scrollbars=yes");
+	}
+	
+	//open_popup('form1', {sizeW : '826' ,sizeH : '588' ,target:'fnp_ebz_10210_depo', action:'fnp_ebz_10210_depo.act'});	
+}
+
+function drawSubTop(v){
+	if(v.sub.length > 0){
+		topMenu = topMenu + '<ul class="sub" style="display:none;">';
+		
+		$.each(v.sub , function( sui , suv ){
+			topMenu = topMenu + "<li id='"+suv.id+"'><a href='javascript:void(0);'>"+suv.name+"</a>";
+			topMenu = topMenu + "</li>";		
+		});
+		
+		topMenu = topMenu + "</ul>";
+	}
+}
+
+function topmenu_open(){	
+	topmenu_canceltimer();
+	topmenu_close();
+	ddmenuitemTop = $(this).find('a').addClass('over');
+	ddmenuitem = $(this).find('ul').eq(0).css('visibility', 'visible');
+	languageOpen();
+}
+
+function topmenu_close(){	
+	if(ddmenuitemTop) ddmenuitemTop.removeClass('over');
+	if(ddmenuitem) ddmenuitem.css('visibility', 'hidden');
+}
+
+function topmenu_timer(){	
+	closetimer = window.setTimeout("topmenu_close()", timeout);
+}
+
+function topmenu_canceltimer(){	
+	if(closetimer){	
+		window.clearTimeout(closetimer);
+		closetimer = null;
+	}
+}
+
+var flag 		= 0;	
+var clickFlag 	= true;
+var fcsClick   	= '';
+var _depth2Tit 	= '';
+
+function mainMenuOpen(){
+	
+	if(!$(this).hasClass("report")){
+		
+		
+		_depth2Tit = $('> a', $(this)).text();
+		
+		if (!$(this).parent().is('#topMenuId')) {
+			_depth2Tit = $(this).parent().parent().find(' > a').text();
+		}	
+		
+		try{
+		    if(isMobileAgentChk() && fcsClick != ""){
+				
+	    		if($(this).attr("id").indexOf("sub") == -1 && fcsClick != _depth2Tit){
+					
+			    	fcsClick = _depth2Tit;
+			    	return;
+				}
+	    	}else{
+	    	}
+		}catch(e){
+		}
+		
+		/*if ("fsv_fnr"==($(this).attr("id"))){
+			console.log('9');
+			location.href = "https://www.dgb.co.kr/com_ebz_fsv_hap_main.jsp";
+		}else{*/
+			
+			if(clickFlag) {
+				var url = $(this).attr("data-url");		
+				var onepage = $(this).attr("data-onepage");
+				
+
+			    // 20210209 새창오픈 추가
+			    if ($(this).attr("data-type") == "winup")
+			    {
+			        f_windowOpenFunc(url);
+			        return;
+			    }
+			    
+				if (onepage != null && ("undefined" != onepage) && (onepage.length > 1)) {
+					// 퇴직연금(S)
+					if (onepage == 'rps') {
+						var objLk = {'HP_BK':'BK', 'LOCATION_PAGE':'com_ebz_rps_sub_main'};
+						dataCtrl.setObjData("BK_LINK", jex.toStr(objLk));	
+						
+						location.href = _CodeMgr.getCodeMsg("CODE_URL", "1090");						
+					}
+					// 20210722 펀드메뉴일경우 - 클릭시 가입절차안내화면 기본
+					else if ($(this).attr("id")  == 'fnm_fnf') {
+					    link4DepthMenuPage("fnm_fnf_sub3_2", "fnm_fnf_sub3","0", "com_ebz_fpm_main.act");
+					    
+                    } else {
+						location.href = "https://www.dgb.co.kr/"+url;
+					}
+					// 퇴직연금(E)
+				} 
+				else
+				{
+					clickFlag = false;
+					var linkValue = $(".top_slide_menu01_content > div > div").eq($(this).index()).find("ul > li").eq(0).attr("id");
+					var clid = $(this).attr("id");
+					linkValue = $("#"+clid+">div>ul>li").eq(0).attr("id");
+					var obj = {'MENU_LOCATION':linkValue,'MENU_DEPTH':'2' };
+					dataCtrl.setObjData("MENU_LOCATION",JSON.stringify(obj));
+					location.href = mainPage+".act";
+				}
+				
+			}	
+		//}
+	}
+}
+
+function mainSubMenuOpen(){
+	clickFlag = false;
+	
+
+	var linkValue = $(this).attr("id");
+
+	if ($(this).attr("data-type") == "main_move"){
+		location.href = $(this).attr("data-url");
+		return;
+	}
+	// 20201021 새창오픈 추가
+	else if ($(this).attr("data-type") == "winup")
+    {
+        window.open($(this).attr("data-url"));
+        return;
+    }
+	
+	if (linkValue == "fnm_fnl_sub3_3" || linkValue == "fnm_fnc_sub6_3" || linkValue == "hlp_hab_sub6_4")
+	{
+		location.reload();
+	}else{
+		var obj = {'MENU_LOCATION':linkValue,'MENU_DEPTH':'2' };
+		dataCtrl.setObjData("MENU_LOCATION",JSON.stringify(obj));
+
+		location.href = mainPage+".act";
+	}
+}
+
+function goDepth3Page(url, lg_accs_yn, cft_login_yn, hmp_login_yn, id, num2, depth, loginKeepHrSec, parent_id){
+	//로그인여부		 : lg_accs_yn
+	//인증서로그인여부 	 : cft_login_yn
+	//홈페이지로그인여부 : hmp_login_yn
+
+	
+	linkMenuPage(id, parent_id,'0', "/" + mainPage + ".act");
+ 	
+}
+
+$(document).ready(function(){
+	/*
+	$('#topMenuId > li').bind('click', mainMenuOpen);	
+	$('.slideMenu_depth2 li').bind('click', mainSubMenuOpen);	
+	$('.slideMenu_depth3 > li > ul > li').bind('click', mainSubMenuOpen);	
+	
+	$("#topMenuId > li >a").bind("mouseover focus",function(){
+		fcsClick = "init";
+
+		// 상위 over클레스를 지운다.
+		$("#topMenuId>li").each(function(){
+			$(this).find('> a').removeClass('over');
+		});
+		
+		$(this).find('li').addClass('over');
+		
+		// 전체 서브 메뉴를 가린다.
+		$("#topMenuId ul").stop().css('display','none');
+		
+		// 해당 서브메뉴만 내려온다.
+		$(this).next().stop().css('display','block');
+		$(this).find('> a').addClass('over');
+		$(this).parent().find('> a').addClass('over');
+	});	
+	
+	$("#topMenuId").mouseleave(function(){ //마우스가 벗어났을 때
+		$("#topMenuId>li").each(function(){
+			$(this).find('> a').removeClass('over');
+		});
+		$("#topMenuId ul").stop().css('display','none');
+	});	
+	*/
+});
+
+function topMenuClear(){
+	$("#topMenuId>li").each(function(){
+		$(this).find('> a').removeClass('over');
+	});
+	
+	$("#topMenuId ul").stop().css('display','none');	
+}
+
+function linkOneDepthOpen(linkValue){
+	var obj = {'MENU_LOCATION':linkValue,'MENU_DEPTH':'1' };
+	dataCtrl.setObjData("MENU_LOCATION",JSON.stringify(obj));	
+	
+	location.href = mainPage+".act";
+}
+
+function linkTwoDepthOpen(linkValue){
+	var obj = {'MENU_LOCATION':linkValue,'MENU_DEPTH':'2' };
+	dataCtrl.setObjData("MENU_LOCATION",JSON.stringify(obj));
+	
+	location.href = mainPage+".act";
+}
+
+function linkMenuPage(linkValue,id,num,linkPage){
+	dataCtrl.delObjData("MENU_LOCATION");
+
+	var obj = {'MENU_LOCATION' 	: linkValue,
+			   'MENU_DEPTH'		: '3',
+			   'ID'				: id,
+			   'NUM'			: num,
+			   'LOCATION_PAGE'	: linkPage,
+			   'BT_LINK'	    : 'TRUE',			   
+			   'HP_BK'			:'HP'};		
+	
+	
+	dataCtrl.setObjData("MENU_LOCATION",JSON.stringify(obj));
+
+	location.href = _CodeMgr.getCodeMsg("CODE_URL", "1002") + linkPage;
+}
+
+function linkMenuPageInter(linkValue,id,num,linkPage,linksubpage){
+	dataCtrl.delObjData("MENU_LOCATION");
+
+	var obj = {'MENU_LOCATION' 	: linkValue,
+			   'MENU_DEPTH'		: '3',
+			   'ID'				: id,
+			   'NUM'			: num,
+			   'LOCATION_PAGE'	: linkPage,
+			   'BT_LINK'	    : 'TRUE',			   
+			   'HP_BK'			:'HP',			   
+			   'SUB_LINK'		:linksubpage
+			  };		
+	
+	dataCtrl.setObjData("MENU_LOCATION",JSON.stringify(obj));
+
+	location.href = linkPage;
+}
+
+function link4DepthMenuPage(linkValue,id,num,linkPage){
+	dataCtrl.delObjData("MENU_LOCATION");
+	var obj = {'MENU_LOCATION' 	: linkValue,
+			   'MENU_DEPTH'		: '4',
+			   'ID'				: id,
+			   'NUM'			: num,
+			   'LOCATION_PAGE'	: linkPage,
+			   'BT_LINK'	    : 'TRUE',			   
+			   'HP_BK'			:'HP'};		
+	dataCtrl.setObjData("MENU_LOCATION",JSON.stringify(obj));
+	location.href = linkPage;
+}
+
+
+function mainLinkMenuPage(linkValue, id, num, linkPage, checkId) {
+	dataCtrl.delObjData("MENU_LOCATION");
+	var obj = {
+		'MENU_LOCATION' : linkValue,
+		'MENU_DEPTH'    : '3'      ,
+		'ID'            : id       ,
+		'NUM'           : num      ,
+		'LOCATION_PAGE' : linkPage ,
+	    'BT_LINK'	    : 'TRUE'   ,
+		'HP_BK'         : 'HP'	   ,
+		'CHECK_ID'   : checkId
+
+	};
+	dataCtrl.setObjData("MENU_LOCATION", JSON.stringify(obj));
+	
+	location.href = linkPage;
+}
+
+function linkEventDetailPage(bbsId, seq) {	
+	var jObj = {};
+	
+	jObj._BBS_CMSYN	     = "";    //게시판 CMS 여부              
+	jObj._BBS_CMSURL	 = "";    //게시판 CMS URL             
+	jObj._BBS_TOPDVCD    = "";    //게시판 상단부가기능 타입코드         
+	jObj._BBS_LISTDVCD   = "";    //게시판 LIST 타입코드           
+	jObj._BBS_BOTDVCD    = "";    //게시판 하단부가기능 타입코드         
+	jObj._BBS_INQYN	     = "";    //게시판 검색기능 여부		      
+	jObj._BBS_MAINTYPECD = "";    //게시판 종류구분코드              
+	jObj._BBS_DTLCD	     = "08";  //게시판 상세구분코드   
+	jObj._BBS_ID         = bbsId; //게시판아이디
+	jObj._BBS_SITECD     = "99";  //게시판사이트구분
+	jObj._BBS_MENUCD     = "A";   //게시판메뉴구분
+	jObj._BBS_WRITSEQ    = seq;   //게시물번호 
+	jObj._BBS_WRITTYPE   = "";    //게시물 입력타입
+	jObj._BBS_WNPRS_YN   = "";    //이벤트 당첨자 표시여부
+	jObj._BBS_WN_PNUM    = "";    //이벤트 당첨자 휴대전화번호 
+	jObj._BBS_REPL_YN    = "";    //공감댓글형 리스트표시여부
+	jObj._BBS_PAGE_IDX   = 1;     //페이징 인덱스
+	jObj._BBS_TAB_SCR_YN = "";    //텝화면 여부
+	jObj._BBS_TAB_MNUDVCD= "";    //텝 상단부가기능 고정값
+	jObj._BBS_TAB_SITDVCD= "";    //텝 상단부가기능 고정값
+	jObj._BBS_IMG_SRC    = "";    //이미지경로
+	jObj._BBS_ADV_CLACD  = "";    //도움말구분코드
+	jObj._BBS_RLVNT_YR     = "";  //해당년도(대은경제리뷰)
+	jObj._BBS_REVW_STRT_DD = "";  //리뷰시작월(대은경제리뷰)
+	jObj._BBS_REVW_END_DD  = "";  //리뷰종료월(대은경제리뷰)
+	jObj._BBS_REVW_TMRD    = "";  //리뷰발행회차(대은경제리뷰)
+	jObj._BBS_NM           = "";  //게시판명
+	jObj._BBS_FNM_PROD_DV  = "";  //금융상품구분
+	jObj._BBS_TAB_FNM_PROD_DV = "";//금융상품구분 (텝 상단부가기능 고정값)
+	jObj._BBS_FNM_FILE_DV  = "";  //금융상품파일구분
+	jObj._REG_SNO          = "";  //공매물건 매각관리 등록순번
+	jObj._BBS_ANSSEQ       = "";  //답글순번
+	jObj._BBS_ANS_COMPT_YN = "";  //답변완료여부
+	jObj._BBS_ALL_USE_YN   = "";
+	jObj._BBS_SCH_OBJ      = "";
+	jObj._BBS_SPPT_SV_DVCD = "";	
+	
+	dataCtrl.setObjData('BBS_DATA', JSON.stringify(jObj));
+	window.open("https://www.dgb.co.kr/bbs_ebz_10020_bord.act", "_blank", "left=100, top=100, width=300, height=300");
+}
+
+function bkLinkTwoDepthOpen(ibnkMnuCd,pibIbnkUpperMnuCd,cibIbnkUpperMnuCd,toplvlMnuId,strtPgDrctrNm,locationPage,pibMainPage,cibMainPage){
+	var ibnkUpperMnuCd = "";
+	
+	if(toplvlMnuId == "A01"){
+		ibnkUpperMnuCd = pibIbnkUpperMnuCd;
+	}else if(toplvlMnuId == "A02"){
+		ibnkUpperMnuCd = cibIbnkUpperMnuCd;
+	}
+	
+	var obj = {'IBNK_MNU_CD':ibnkMnuCd,'IBNK_UPPER_MNU_CD':ibnkUpperMnuCd,'MNU_LEVL_NO':'2','TOPLVL_MNU_ID':toplvlMnuId,'STRT_PG_DRCTR_NM':strtPgDrctrNm,'PIB_IBNK_UPPER_MNU_CD':pibIbnkUpperMnuCd,'CIB_IBNK_UPPER_MNU_CD':cibIbnkUpperMnuCd,'LOCATION_PAGE':locationPage,'PIB_MAIN_PAGE':pibMainPage,'CIB_MAIN_PAGE':cibMainPage,'HP_BK':'BK' };
+	dataCtrl.setObjData("MENU_LOCATION",JSON.stringify(obj));	
+	
+	var objLk = {'HP_BK':'BK','LOCATION_PAGE':locationPage};
+	dataCtrl.setObjData("BK_LINK",JSON.stringify(objLk));	
+	
+	location.href = _CodeMgr.getCodeMsg("CODE_URL", "1090");   
+}
+
+function bkLinkThDepthOpen(ibnkMnuCd,pibIbnkUpperMnuCd,cibIbnkUpperMnuCd,toplvlMnuId,strtPgDrctrNm,locationPage,pibMainPage,cibMainPage){
+	var ibnkUpperMnuCd = "";
+	
+	if(toplvlMnuId == "A01"){
+		ibnkUpperMnuCd = pibIbnkUpperMnuCd;
+	}else if(toplvlMnuId == "A02"){
+		ibnkUpperMnuCd = cibIbnkUpperMnuCd;
+	}
+	
+	var obj = {'IBNK_MNU_CD':ibnkMnuCd,'IBNK_UPPER_MNU_CD':ibnkUpperMnuCd,'MNU_LEVL_NO':'3','TOPLVL_MNU_ID':toplvlMnuId,'STRT_PG_DRCTR_NM':strtPgDrctrNm,'PIB_IBNK_UPPER_MNU_CD':pibIbnkUpperMnuCd,'CIB_IBNK_UPPER_MNU_CD':cibIbnkUpperMnuCd,'LOCATION_PAGE':locationPage,'PIB_MAIN_PAGE':pibMainPage,'CIB_MAIN_PAGE':cibMainPage,'HP_BK':'BK' };
+	dataCtrl.setObjData("MENU_LOCATION",JSON.stringify(obj));	
+	
+	var objLk = {'HP_BK':'BK','LOCATION_PAGE':locationPage};
+	dataCtrl.setObjData("BK_LINK",JSON.stringify(objLk));	
+	
+	location.href = _CodeMgr.getCodeMsg("CODE_URL", "1090");   
+}
+
+function bkLinkFoDepthOpen(ibnkMnuCd,pibIbnkUpperMnuCd,cibIbnkUpperMnuCd,toplvlMnuId,strtPgDrctrNm,locationPage,pibMainPage,cibMainPage){
+	var ibnkUpperMnuCd = "";
+	
+	if(toplvlMnuId == "A01"){
+		ibnkUpperMnuCd = pibIbnkUpperMnuCd;
+	}else if(toplvlMnuId == "A02"){
+		ibnkUpperMnuCd = cibIbnkUpperMnuCd;
+	}
+	
+	var obj = {'IBNK_MNU_CD':ibnkMnuCd,'IBNK_UPPER_MNU_CD':ibnkUpperMnuCd,'MNU_LEVL_NO':'4','TOPLVL_M"NU_ID':toplvlMnuId,'STRT_PG_DRCTR_NM':strtPgDrctrNm,'PIB_IBNK_UPPER_MNU_CD':pibIbnkUpperMnuCd,'CIB_IBNK_UPPER_MNU_CD':cibIbnkUpperMnuCd,'LOCATION_PAGE':locationPage,'PIB_MAIN_PAGE':pibMainPage,'CIB_MAIN_PAGE':cibMainPage,'HP_BK':'BK' };
+	dataCtrl.setObjData("MENU_LOCATION",JSON.stringify(obj));	
+	
+	var objLk = {'HP_BK':'BK','LOCATION_PAGE':locationPage};
+	dataCtrl.setObjData("BK_LINK",JSON.stringify(objLk));
+	
+	location.href = _CodeMgr.getCodeMsg("CODE_URL", "1090");  
+}
+
+function bkLinkFiDepthOpen(ibnkMnuCd,pibIbnkUpperMnuCd,cibIbnkUpperMnuCd,toplvlMnuId,strtPgDrctrNm,locationPage,pibMainPage,cibMainPage){
+	var ibnkUpperMnuCd = "";
+	
+	if(toplvlMnuId == "A01"){
+		ibnkUpperMnuCd = pibIbnkUpperMnuCd;
+	}else if(toplvlMnuId == "A02"){
+		ibnkUpperMnuCd = cibIbnkUpperMnuCd;
+	}
+	
+	var obj = {'IBNK_MNU_CD':ibnkMnuCd,'IBNK_UPPER_MNU_CD':ibnkUpperMnuCd,'MNU_LEVL_NO':'5','TOPLVL_MNU_ID':toplvlMnuId,'STRT_PG_DRCTR_NM':strtPgDrctrNm,'PIB_IBNK_UPPER_MNU_CD':pibIbnkUpperMnuCd,'CIB_IBNK_UPPER_MNU_CD':cibIbnkUpperMnuCd,'LOCATION_PAGE':locationPage,'PIB_MAIN_PAGE':pibMainPage,'CIB_MAIN_PAGE':cibMainPage,'HP_BK':'BK' };
+	dataCtrl.setObjData("MENU_LOCATION",JSON.stringify(obj));	
+	
+	var objLk = {'HP_BK':'BK','LOCATION_PAGE':locationPage};
+	dataCtrl.setObjData("BK_LINK",JSON.stringify(objLk));
+	
+	location.href = _CodeMgr.getCodeMsg("CODE_URL", "1090");  
+}
+
+function f_windowOpenFunc(src){
+	window.open(src);
+}
+function windowCalFunc(id){
+	
+	var subid = id.substr(4,3);
+	var sObj = {};
+	if (subid == 'fnl')
+	{
+		sObj.TITLE_VAL = "L";
+	}else if (subid == 'fnl')
+	{
+		sObj.TITLE_VAL = "E";
+	}else {
+		sObj.TITLE_VAL = "S";
+	}
+	dataCtrl.setObjData("MENU_DATA", JSON.stringify(sObj));
+	window.open('/fnz_ebz_11110_ct01_s.act','testWindow','width=800, height=735, scrollbars=yes');
+}
+function benefitClassNm(val , no){
+	var ret = "";
+
+	if (no == '1')
+	{
+		if (val == "100")	   ret = "주유";              
+		else if (val == "101") ret = "쇼핑";              
+		else if (val == "102") ret = "통신";              
+		else if (val == "103") ret = "외식(커피)";        
+		else if (val == "104") ret = "영화";              
+		else if (val == "105") ret = "교통";              
+		else if (val == "106") ret = "Fun&Life";          
+		else if (val == "107") ret = "마트/백화점/편의점";
+		else if (val == "108") ret = "철도";              
+		else if (val == "199") ret = "기타업종";          
+		else if (val == "200") ret = "포인트";            
+		else if (val == "201") ret = "할인(캐시백)";      
+		else if (val == "202") ret = "항공마일리지";      
+		else if (val == "203") ret = "금융서비스";        
+		else if (val == "204") ret = "연회비1";           
+		else if (val == "205") ret = "연회비2";           
+		else if (val == "206") ret = "연회비3";           
+		else if (val == "207") ret = "면제서비스";        
+		else if (val == "299") ret = "기타서비스";          
+		//else ret = "etc"; // 그외	
+	}else{
+		if (val == "100")      ret = "gas";        
+		else if (val == "101") ret = "shoping";    
+		else if (val == "102") ret = "telecom";    
+		else if (val == "103") ret = "food";       
+		else if (val == "104") ret = "movie";      
+		else if (val == "105") ret = "traffic";    
+		else if (val == "106") ret = "life";       
+		else if (val == "107") ret = "market";     
+		else if (val == "108") ret = "rail";       
+		else if (val == "199") ret = "business";   
+		else if (val == "200") ret = "point";      
+		else if (val == "201") ret = "discount";   
+		else if (val == "202") ret = "air";        
+		else if (val == "203") ret = "fin_service";
+		else if (val == "204") ret = "fee1";       
+		else if (val == "205") ret = "fee2";       
+		else if (val == "206") ret = "fee3";       
+		else if (val == "207") ret = "service";    
+		else if (val == "299") ret = "benefit";    
+		//else ret = "etc"; // 그외	
+	}
+
+	return ret;
+}
+function MenuDatForCard()
+{
+	_HMP_PAGE_INDEX = 1;
+	// 공통입력부 셋팅		
+	var jexAjax = "";
+	jexAjax = jex.createAjaxUtil("fnc_ebz_11010_card_d001");
+	var dpoDvCnt    = 0;
+	//상품몰 조회 구분코드
+	jexAjax.set("MALL_INQ_DVCD" 	, "99"); // all 
+	jexAjax.set("VLD_VAL" 		, getSiteDvcd());
+	//기타 : 정렬방식 순서		
+	jexAjax.set("SMRT_LNUP_DV", "fnmMain");
+	var objWebWorkComm = new Object();
+	objWebWorkComm.INQ_SEQ = String(_HMP_PAGE_INDEX);		//조회될 페이지번호
+	objWebWorkComm.INQ_NCSE = 1;					//한페이지에 조회될 건수
+	jexAjax.set("EBZ_WEB_WORK_COMM", objWebWorkComm);
+	var divId="card_b_";
+	var result = "";
+
+	jexAjax.execute(function(dat) { 			
+		
+		var jsonData = dat.REC1;
+		
+		for(var i=0; i < dat.REC1.length; i++) {
+			
+			var row = jsonData[i];
+			var addCls = "";
+
+			if (row.PD_NM.length > "13")
+			{ addCls = " long_line"; }
+
+			if(row.POP_PD_YN  == "Y" || row.RCMD_PD_YN == "Y" || row.NWGD_YN    == "Y") result += "<li class=\"gnb_icon_area\">";
+			if(row.POP_PD_YN  == "Y") result += "	<span><img src=\"/img/common/bg/ebz_bg_product_ico1.gif\" alt=\"인기상품\"></span>";
+			if(row.RCMD_PD_YN == "Y") result += "	<span><img src=\"/img/common/bg/ebz_bg_product_ico3.gif\" alt=\"추천상품\"></span>";
+			if(row.NWGD_YN    == "Y") result += "	<span><img src=\"/img/common/bg/ebz_bg_product_ico2.gif\" alt=\"신상품\"></span>";
+			
+			if(row.POP_PD_YN  == "Y" || row.RCMD_PD_YN == "Y" || row.NWGD_YN    == "Y") result += "</li>";
+			
+			//result += "<li class=\"gnb_visual_area\"><a href=\"javascript:goProductDetailByPdCd('"+row.PD_CD.substr(0,6)+"','" + row.PD_CD.substr(6,6) + "','" +row.PD_CD.substr(12) +"','D');\" title=\"" + row.PD_NM + "\"><img src=\""+row.IMG_FILE_NM1+"\" width=\"224\" height=\"142\" onerror=\"this.style.visibility='hidden'\" onerror=\"this.style.visibility='hidden'\" alt=\"" + row.PD_NM + " 상품 이미지\"/></a></li>";
+			result += "<li class=\"gnb_visual_area\"><img src=\""+row.IMG_FILE_NM1+"\" width=\"224\" height=\"142\" onerror=\"this.style.visibility='hidden'\" onerror=\"this.style.visibility='hidden'\" alt=\"" + row.PD_NM + " 상품 이미지\"/></li>";
+			result += "<li class=\"gnb_title_area\"><p class=\"product_sub_txt\">"+row.PD_NM+"<p></li>"
+				   +  "<li class=\"gnb_con_area\"><p class=\"new_title_up\">"+row.CARD_CONCPT_CN+"</p></li>";
+			
+			if(jex.null2Void(row.CARD_PROF_AT_C_CN) != ""){
+				result += "<li class=\"gnb_pro_icon_area\"><ul class=\"card_benefit_list\">";
+				var codeArr = row.CARD_PROF_AT_C_CN.split(":");
+
+				for(var j = 0; j < codeArr.length; j++){
+					//result += "	<li class=\""+benefitClassNm(codeArr[j],'2')+"\">"+benefitClassNm(codeArr[j],'1')+"</li>";
+					result += "	<li class=\""+benefitClassNm(codeArr[j],'2')+"\"><span class=\"hidden\">"+benefitClassNm(codeArr[j],'1')+"</span></li>";
+					//if (j == 2)
+					if (j == 6)
+					{
+						break;
+					}
+				}
+				result += "</ul></li>";
+			}
+
+			if(row.SITE_JN_PSBLYN == "Y" && row.ITN_JN_PSBLYN == "Y"){
+				result +=  "<li class=\"gnb_btn_area\"><p class=\"new_title_btn\"><a href=\"javascript:goProductDetailByPdCd('"+row.PD_CD.substr(0,6)+"','" + row.PD_CD.substr(6,6) + "','"+ row.PD_CD.substr(12) +"','J');\" title=\"" + row.PD_NM + " \" class=\"btn_type31 point\"><span>가입하기</span></a><a href=\"javascript:goProductDetailByPdCd('"+row.PD_CD.substr(0,6)+"','" + row.PD_CD.substr(6,6) + "','"+ row.PD_CD.substr(12) +"','D');\" class=\"btn_type31\"><span>내용보기</span></a></p></li>"
+			}
+			
+			
+		}
+		$("#slideMenu_card").append(result);
+	});
+	return result;
+}
+
+function MenuDatForDeposit()
+{
+	_HMP_PAGE_INDEX = 1;
+	// 공통입력부 셋팅		
+	var jexAjax     = "";
+	
+	jexAjax     = jex.createAjaxUtil("fnp_ebz_21010_depo_d001");
+		
+	var dpoDvCnt    = 0;
+	
+	//상품몰 조회 구분코드
+	jexAjax.set("MALL_INQ_DVCD" 	, "99"); // all 
+		
+	/* 01:금융몰 */
+	jexAjax.set("VLD_VAL" 			, "01");
+	
+	//기타 : 정렬방식 순서		
+	jexAjax.set("SMRT_LNUP_DV", "fmpMain");
+
+	var objWebWorkComm = new Object();
+	objWebWorkComm.INQ_SEQ = String(_HMP_PAGE_INDEX);		//조회될 페이지번호
+	objWebWorkComm.INQ_NCSE = 1;					//한페이지에 조회될 건수
+	jexAjax.set("EBZ_WEB_WORK_COMM", objWebWorkComm);
+	
+	var jObj = {};
+	jObj = dataCtrl.getObjData('FNM_DETAIL_DATA');
+	
+	if(jObj == null){
+		jexAjax.addOption("loading", true);
+	}
+	
+	//_TABLE.clearTbl(true);
+
+	var divId="depo_b_";
+	var result = "";
+
+	jexAjax.execute(function(dat) { 			
+		
+		//_DATA_LIST = dat.REC1; //조회된 값을 전역변수에 저장
+		
+		var jsonData = dat.REC1;
+		
+		for(var i=0; i < jsonData.length; i++) {
+			var row = jsonData[i];
+			var addCls = "";
+			
+			if(row.POP_PD_YN  == "Y" || row.RCMD_PD_YN == "Y" || row.NWGD_YN    == "Y"){
+				result += "<li class=\"gnb_icon_area\">";
+			}
+			if(row.POP_PD_YN  == "Y")
+				result += "	<span><img src=\"/img/common/bg/ebz_bg_product_ico1.gif\" alt=\"인기상품\"></span>";
+			if(row.RCMD_PD_YN == "Y")
+				result += "	<span><img src=\"/img/common/bg/ebz_bg_product_ico2.gif\" alt=\"신상품\"></span>";
+			if(row.NWGD_YN    == "Y")
+				result += "	<span><img src=\"/img/common/bg/ebz_bg_product_ico3.gif\" alt=\"추천상품\"></span>";
+			
+			if(row.POP_PD_YN  == "Y" || row.RCMD_PD_YN == "Y" || row.NWGD_YN    == "Y"){
+				result += "</li>";
+			}
+			
+			if (row.PD_NM.length > "13")
+			{
+				addCls = " long_line";
+			}
+			//result += "<li class=\"gnb_visual_area\"><a href=\"javascript:goProductDetailByPdCd('"+row.PD_CD.substr(0,6)+"','" + row.PD_CD.substr(6,6) + "','" +row.PD_CD.substr(12) +"','D');\" title=\"" + row.PD_NM + "\"><img src=\""+row.IMG_FILE_NM+"\" width=\"224\" height=\"142\" onerror=\"this.style.visibility='hidden'\" alt=\"" + row.PD_NM + " 상품 이미지\"/></a></li>";
+			//result += "<li class=\"gnb_title_area\"><p class=\"product_sub_txt\"><a href=\"javascript:goProductDetailByPdCd('"+row.PD_CD.substr(0,6)+"','" +row.PD_CD.substr(6,6)+ "','"+ row.PD_CD.substr(12)+ "','D');\">" + row.PD_NM + "</a></p></li>";
+			result += "<li class=\"gnb_visual_area\"><img src=\""+row.IMG_FILE_NM+"\" width=\"224\" height=\"142\" onerror=\"this.style.visibility='hidden'\" alt=\"" + row.PD_NM + " 상품 이미지\"/></li>";
+			result += "<li class=\"gnb_title_area\"><p class=\"product_sub_txt\">" + row.PD_NM + "</p></li>";
+
+
+
+			if (jex.null2Void(row.PD_SMRY_CN) != "")
+			{
+				/*if (row.PD_SMRY_CN.length > 50)
+				{
+					row.PD_SMRY_CN = row.PD_SMRY_CN.substr(0,50)+"...";
+				}*/
+				result += "<li class=\"gnb_con_area\"><p class=\"new_title_up\"><span>"+jex.null2Void(row.PD_SMRY_CN)+"</span></p></li>";
+			}
+			result += "<li class=\"gnb_rate_area\">";
+			
+			if(jex.null2Void(row.ITN_MAX_RATE) == "" || jex.null2Void(row.ITN_MAX_RATE) == "-"){
+				result += "	<p class=\"rate_txt\">최고이자율 연 <strong>-%</strong></p>";;
+			}else{
+				var maxRate = "";
+				if(row.SITE_JN_PSBLYN == "Y" && row.ITN_JN_PSBLYN == "Y"){
+					maxRate = jex.null2Void(row.ITN_MAX_RATE);
+				}
+				else if(row.WIC_JN_PSBLYN == "Y" && row.ITN_JN_PSBLYN != "Y"){
+					maxRate = jex.null2Void(row.WIC_MAX_RATE);
+				}
+				else if(row.SMRT_BNK_JN_PSBLYN == "Y" && row.ITN_JN_PSBLYN != "Y"){
+					maxRate = jex.null2Void(row.ITN_MAX_RATE);
+				}
+				result += "	<p>최고이자율 연 <strong>"+ maxRate +"%</strong></p>";
+				result += "	<p>(1년기준 세금납부전)</p>";
+			}				
+			result += "</li>";
+			result += "<li class=\"gnb_btn_area\"><p class=\"new_title_btn\">";
+			if(row.SITE_JN_PSBLYN == "Y" && row.ITN_JN_PSBLYN == "Y"){
+				result += "<a href=\"javascript:goProductDetailByPdCd('"+row.PD_CD.substr(0,6)+"','" + row.PD_CD.substr(6,6)+ "','"+ row.PD_CD.substr(12) +"','J')\" title=\"" + row.PD_NM + " 가입하기\" class=\"btn_type31 point\"><span>가입하기</span></a>";
+			}
+			result +="<a href=\"javascript:goProductDetailByPdCd('"+row.PD_CD.substr(0,6)+"','" + row.PD_CD.substr(6,6)+ "','"+ row.PD_CD.substr(12) +"','D');\" class=\"btn_type31\"><span>내용보기</span></a>";
+			result += "</p>";
+			result +="</li>";
+		}
+		
+		$("#slideMenu_deposit").append(result);
+	});
+	return result;
+}
+
+function MenuDatForFund(slideId){
+	var tempList = new Array();
+	_HMP_PAGE_INDEX = 1;
+	var objWebWorkComm = new Object();
+	objWebWorkComm.INQ_SEQ = String(_HMP_PAGE_INDEX);		//조회될 페이지번호
+	var jexAjax = jex.createAjaxUtil("fnf_ebz_31010_fund_d001"); //리스트 화면은 모두 같은 ACTION 사용 (조회 조건만 조금씩 다름)
+
+	jexAjax.set("RTMT_YN" , "N");      		//퇴직연금여부 (Y:퇴직연금    N:일반펀드   "":해당없음)
+	jexAjax.set("VLD_VAL" , getSiteDvcd()); //게시사이트구분코드 (01:금융상품몰  06:독도지점  07:그린지점  08:경주지점  09:한수원  14:혁신도시)
+	jexAjax.set("OVRS_FUND_YN"		  , ""); 						 	//해외펀드여부
+	jexAjax.set("FUND_SELL_CHNL_DVCD" , ""); 						 	//펀드판매채널구분
+	jexAjax.set("BCT_OPR_FC_REC"	  , tempList);   	//펀드유형(수익증권운용형태코드) 선택값 가져오기
+	jexAjax.set("OVRS_STCK_NVST_EU_FUND_YN", ""); 						//해외주식투자전용펀드
+	jexAjax.set("NVST_DESN_AST_TPCD","");
+	jexAjax.set("SMRT_LNUP_DV"			, _HMP_SORT_TYPE);                  //정렬방식
+	jexAjax.set("FUND_OPCMP_CD"			, "0");               //운용사 선택값 가져오기
+	jexAjax.set("FUND_SELL_PSBLYN"		, "");        	//판매완료여부 가져오기
+	jexAjax.set("FUND_NM"				, "");             //펀드명 입력값 가져오기
+	jexAjax.set("SMRT_LNUP_DV"			, "fmnMain");                  //정렬방식
+	jexAjax.set("FUND_NVST_RISK_GDC_REC", tempList);  			//위험등급 체크내역 가져오기
+	jexAjax.set("PLN_DVCD_REC"			, []);
+	jexAjax.set("EBZ_WEB_WORK_COMM", objWebWorkComm);
+
+	var divId="fund_b_";
+	var result = "";
+
+	jexAjax.execute(function(dat) { 			
+			
+		var jsonData = dat.REC1;
+		
+		for(var i=0; i < jsonData.length; i++) {
+			
+			var row = jsonData[i];
+			var addCls = "";			
+			
+			if (row.POP_PD_YN  == "Y" || row.NWGD_YN    == "Y" || row.RCMD_PD_YN == "Y"){
+				result += "<li class=\"gnb_icon_area\">";
+			}
+			if (row.POP_PD_YN  == "Y"){
+				result +="	<span><img src=\"/img/common/bg/ebz_bg_product_ico1.gif\" alt=\"인기상품\"></span>";
+			}
+			if (row.NWGD_YN    == "Y"){
+				result +="	<span><img src=\"/img/common/bg/ebz_bg_product_ico2.gif\" alt=\"신상품\"></span>";
+			}
+			if (row.RCMD_PD_YN == "Y"){
+				result +="	<span><img src=\"/img/common/bg/ebz_bg_product_ico3.gif\" alt=\"추천상품\"></span>";
+			}
+			if (row.POP_PD_YN  == "Y" || row.NWGD_YN    == "Y" || row.RCMD_PD_YN == "Y"){
+				result +="</li>";
+			}			
+			
+			if (jex.null2Void(row.IMG_FILE_NM) == "")
+			{
+				//result +="<li class=\"gnb_visual_area\"><a href=\"javascript:goProductDetailByPdCd('"+row.TRUST_FUND_CD.substr(0,6)+"','" + row.TRUST_FUND_CD.substr(6,6) + "','" +row.TRUST_FUND_CD.substr(12) +"','D');\" title=\"" + row.FUND_NM + "\"><img src=\"/img/common/card/ebz_fund_test.jpg\" width=\"224\" height=\"142\" onerror=\"this.style.visibility='hidden'\" alt=\"" + row.FUND_NM + " 상품 이미지\"/></a></li>";
+				result +="<li class=\"gnb_visual_area\"><img src=\"/img/common/card/ebz_fund_test.jpg\" width=\"224\" height=\"142\" onerror=\"this.style.visibility='hidden'\" alt=\"" + row.FUND_NM + " 상품 이미지\"/></li>";
+			}else{
+				//result +="<li class=\"gnb_visual_area\"><a href=\"javascript:goProductDetailByPdCd('"+row.TRUST_FUND_CD.substr(0,6)+"','" + row.TRUST_FUND_CD.substr(6,6) + "','" +row.TRUST_FUND_CD.substr(12) +"','D');\" title=\"" + row.FUND_NM + "\"><img src=\""+row.IMG_FILE_NM+"\" width=\"224\" height=\"142\" onerror=\"this.style.visibility='hidden'\" alt=\"" + row.FUND_NM + " 상품 이미지\"/></a></li>";
+				result +="<li class=\"gnb_visual_area\"><img src=\""+row.IMG_FILE_NM+"\" width=\"224\" height=\"142\" onerror=\"this.style.visibility='hidden'\" alt=\"" + row.FUND_NM + " 상품 이미지\"/></li>";
+			}
+			//result +="<li class=\"gnb_title_area\"><p class=\"product_sub_txt\"><a href=\"javascript:goProductDetailByPdCd('"+row.TRUST_FUND_CD.substr(0,6)+"','" + row.TRUST_FUND_CD.substr(6,6) + "','"+ row.TRUST_FUND_CD.substr(12) +"','D');\">"+row.FUND_NM+"</a></p>";
+			result +="<li class=\"gnb_title_area\"><p class=\"product_sub_txt\">"+row.FUND_NM+"</p>";
+			result +="<li class=\"gnb_con_area\"><p class=\"new_title_up\"><span>"+getFundTypeNm(row.BCT_OPR_FC)+"</span></p>";
+			result +="<li class=\"gnb_rate_area\">";
+			result +="	<p class=\"rate_txt\"><strong>"+row.MNS3_EN_R+"%</strong> (3개월)</p>";
+			result +="</li>";
+			result +="<li class=\"gnb_btn_area\"><p class=\"new_title_btn\">";
+			result +="<a href=\"javascript:goProductDetailByPdCd('"+row.TRUST_FUND_CD.substr(0,6)+"','" + row.TRUST_FUND_CD.substr(6,6) + "','"+ row.TRUST_FUND_CD.substr(12) +"','D');\" class=\"btn_type31 point\"><span>가입하기</span></a>";
+			//result +="<a href=\"javascript:goProductDetailByPdCd('"+row.TRUST_FUND_CD.substr(0,6)+"','" + row.TRUST_FUND_CD.substr(6,6) + "','"+ row.TRUST_FUND_CD.substr(12) +"','D');\" class=\"btn_type31\"><span>내용보기</span></a>";
+			result +="</p></li>";   
+
+			$("#"+slideId).append(result);
+			
+			result = "";
+
+			break;
+
+		}
+	});
+}
+
+function getFundTypeNm(code) {
+	var codeValue 	= getCodeValueCom("BCT_OPR_FC", code);
+	
+	if (codeValue == "") codeValue = code;
+	return codeValue;
+}
+function MenuDatForLoan()
+{	
+	_HMP_PAGE_INDEX = 1;
+	// 공통입력부 셋팅		
+	var jexAjax = "";
+	
+	var jexAjax = jex.createAjaxUtil("fnl_ebz_41010_loan_d001");
+		
+	var dpoDvCnt    = 0;
+	
+	jexAjax.set("PD_NM"             , $("#txtPrnm").val()); //대출명
+	jexAjax.set("PRSNL_ENPCO_DVCD"	, "01");                //개인기업구분코드(01:개인,02:기업,99:기타,~:해당없음)
+	jexAjax.set("VLD_VAL"			, getSiteDvcd());       //게시사이트구분코드(01:금융상품몰,06:독도지점,07:그린지점,08:경주지점,09:한수원,14:혁신도시)
+	jexAjax.set("SMRT_LNUP_DV"      , "fmnMain");
+	jexAjax.set("HMPG_LO_PD_KNDC"   , "FMNM");
+		
+	//기타 : 정렬방식 순서		
+	
+
+	var objWebWorkComm = new Object();
+	objWebWorkComm.INQ_SEQ = String(_HMP_PAGE_INDEX);		//조회될 페이지번호
+	objWebWorkComm.INQ_NCSE = 1;					//한페이지에 조회될 건수
+	jexAjax.set("EBZ_WEB_WORK_COMM", objWebWorkComm);
+	
+	var divId="loan_b_";
+	var result = "";
+
+	jexAjax.execute(function(dat) { 			
+		
+		var jsonData = dat.REC1;
+		
+		
+		for(var i=0; i < jsonData.length; i++) {
+			
+			var row = jsonData[i];
+			var addCls = "";
+
+			if (row.POP_PD_YN  == "Y" || row.NWGD_YN    == "Y" || row.RCMD_PD_YN == "Y"){
+				result += "<li class=\"gnb_icon_area\">";
+			}
+			if (row.POP_PD_YN  == "Y"){
+				result +="	<span><img src=\"/img/common/bg/ebz_bg_product_ico1.gif\" alt=\"인기상품\"></span>";
+			}
+			if (row.NWGD_YN    == "Y"){
+				result +="	<span><img src=\"/img/common/bg/ebz_bg_product_ico2.gif\" alt=\"신상품\"></span>";
+			}
+			if (row.RCMD_PD_YN == "Y"){
+				result +="	<span><img src=\"/img/common/bg/ebz_bg_product_ico3.gif\" alt=\"추천상품\"></span>";
+			}
+			if (row.POP_PD_YN  == "Y" || row.NWGD_YN    == "Y" || row.RCMD_PD_YN == "Y"){
+				result +="</li>";
+			}
+			
+			if (row.PD_NM.length > "13")
+			{
+				addCls = " long_line";
+			}
+
+			if (jex.null2Void(row.IMG_FILE_NM) != "") 
+			{
+				//result +="<li class=\"gnb_visual_area\"><a href=\"javascript:goProductDetailByPdCd('"+row.PD_CD.substr(0,6)+"','" + row.PD_CD.substr(6,6) + "','" +row.PD_CD.substr(12) +"','D');\" title=\"" + row.PD_NM + "\"><img src=\""+row.IMG_FILE_NM+"\" width=\"224\" height=\"142\" onerror=\"this.style.visibility='hidden'\" alt=\"" + row.PD_NM + " 상품 이미지\"/></a></li>";
+				result +="<li class=\"gnb_visual_area\"><img src=\""+row.IMG_FILE_NM+"\" width=\"224\" height=\"142\" onerror=\"this.style.visibility='hidden'\" alt=\"" + row.PD_NM + " 상품 이미지\"/></li>";
+			}else{
+				//result +="<li class=\"gnb_visual_area\"><a href=\"javascript:goProductDetailByPdCd('"+row.PD_CD.substr(0,6)+"','" + row.PD_CD.substr(6,6) + "','" +row.PD_CD.substr(12) +"','D');\" title=\"" + row.PD_NM + "\"><img src=\"/img/common/card/ebz_loan_test.jpg\" width=\"224\" height=\"142\" onerror=\"this.style.visibility='hidden'\" alt=\"" + row.PD_NM + " 상품 이미지\"/></a></li>";
+				result +="<li class=\"gnb_visual_area\"><img src=\"/img/common/card/ebz_loan_test.jpg\" width=\"224\" height=\"142\" onerror=\"this.style.visibility='hidden'\" alt=\"" + row.PD_NM + " 상품 이미지\"/></li>";
+			}
+			
+			result += "<li class=\"gnb_title_area\"><p class=\"product_sub_txt\"><span>"+row.PD_NM+"</span></p></li>";
+
+			result += "<li class=\"gnb_con_area\"><p class=\"new_title_up\">";
+			//result += "<a href=\"javascript:goProductDetailByPdCd('"+row.PD_CD.substr(0,6)+"','" + row.PD_CD.substr(6,6) + "','" +row.PD_CD.substr(12) +"','D');\">"+jex.null2Void(row.PD_SMRY_CN)+"</a></p></li>";
+			result += ""+jex.null2Void(row.PD_SMRY_CN)+"</p></li>";
+			/*if (row.PD_SMRY_CN.length > 50)
+			{
+				row.PD_SMRY_CN = row.PD_SMRY_CN.substr(0,50)+"...";
+			}*/
+			result +="<li class=\"gnb_btn_area\"><p class=\"new_title_btn\">";
+			result +="<a href=\"javascript:goProductDetailByPdCd('"+row.PD_CD.substr(0,6)+"','" + row.PD_CD.substr(6,6) + "','" +row.PD_CD.substr(12) +"','J');\" class=\"btn_type31 point\"><span>신청하기</span></a>";
+			result +="<a href=\"javascript:goProductDetailByPdCd('"+row.PD_CD.substr(0,6)+"','" + row.PD_CD.substr(6,6) + "','" +row.PD_CD.substr(12) +"','D');\" class=\"btn_type31\"><span>내용보기</span></a></p></li> ";
+			
+			$("#slideMenu_loan").append(result);
+			result = "";
+
+			break;
+
+		}
+	});
+}
+
+function MenuDatForFne(){
+	var result = "";
+	
+	var jexAjax = jex.createAjaxUtil("fne_ebz_54030_foex_d001");
+
+	jexAjax.set("PD_CD", "11534001000001000");
+	/* 사이트 구분입력:01(금융몰) */
+	jexAjax.set("VLD_VAL","01");
+
+	jexAjax.execute(function(dat) { 			
+			
+			
+		var addCls = "";			
+		
+		if (dat.POP_PD_YN  == "Y" || dat.NWGD_YN    == "Y" || dat.RCMD_PD_YN == "Y"){
+			result += "<li class=\"gnb_icon_area\">";
+		}
+		if (dat.POP_PD_YN  == "Y"){
+			result +="	<span><img src=\"/img/common/bg/ebz_bg_product_ico1.gif\" alt=\"인기상품\"></span>";
+		}
+		if (dat.NWGD_YN    == "Y"){
+			result +="	<span><img src=\"/img/common/bg/ebz_bg_product_ico2.gif\" alt=\"신상품\"></span>";
+		}
+		if (dat.RCMD_PD_YN == "Y"){
+			result +="	<span><img src=\"/img/common/bg/ebz_bg_product_ico3.gif\" alt=\"추천상품\"></span>";
+		}
+		if (dat.POP_PD_YN  == "Y" || dat.NWGD_YN    == "Y" || dat.RCMD_PD_YN == "Y"){
+			result +="</li>";
+		}			
+		
+		if (jex.null2Void(dat.IMG_FILE_NM) == "")
+		{
+			//result +="<li class=\"gnb_visual_area\"><a href=\"javascript:goProductDetailByPdCd('"+dat.PD_CD.substr(0,6)+"','" + dat.PD_CD.substr(6,6) + "','" +dat.PD_CD.substr(12) +"','D');\" title=\"" + dat.PD_NM + "\"><img src=\"/img/common/card/ebz_foreign_test.jpg\" width=\"224\" height=\"142\" onerror=\"this.style.visibility='hidden'\" alt=\"" + dat.PD_NM + " 상품 이미지\"/></a></li>";
+			result +="<li class=\"gnb_visual_area\"><img src=\"/img/common/card/ebz_foreign_test.jpg\" width=\"224\" height=\"142\" onerror=\"this.style.visibility='hidden'\" alt=\"" + dat.PD_NM + " 상품 이미지\"/></li>";
+		}else{
+			//result +="<li class=\"gnb_visual_area\"><a href=\"javascript:goProductDetailByPdCd('"+dat.PD_CD.substr(0,6)+"','" + dat.PD_CD.substr(6,6) + "','" +dat.PD_CD.substr(12) +"','D');\" title=\"" + dat.PD_NM + "\"><img src=\""+dat.IMG_FILE_NM+"\" width=\"224\" height=\"142\" onerror=\"this.style.visibility='hidden'\" alt=\"" + dat.PD_NM + " 상품 이미지\"/></a></li>";
+			result +="<li class=\"gnb_visual_area\"><img src=\""+dat.IMG_FILE_NM+"\" width=\"224\" height=\"142\" onerror=\"this.style.visibility='hidden'\" alt=\"" + dat.PD_NM + " 상품 이미지\"/></li>";
+		}
+		//result +="<li class=\"gnb_title_area\"><p class=\"product_sub_txt\"><a href=\"javascript:goProductDetailByPdCd('"+dat.PD_CD.substr(0,6)+"','" + dat.PD_CD.substr(6,6) + "','"+ dat.PD_CD.substr(12) +"','D');\">"+dat.PD_NM+"</a></p>";
+		result +="<li class=\"gnb_title_area\"><p class=\"product_sub_txt\">"+dat.PD_NM+"</p>";
+		result +="<li class=\"gnb_con_area\"><p class=\"new_title_up\"><span>"+dat.PD_SMRY_CN+"</span></p></li>";
+
+		
+		result += "<li class=\"gnb_con_area\">";
+		result +="	<p class=\"new_title_up\">"+dat.NTRST_R_EPL_CN+"</p>";
+		result +="</li>";
+		result +="<li class=\"gnb_btn_area\"><p class=\"new_title_btn\">";
+		result +="<a href=\"javascript:goProductDetailByPdCd('"+dat.PD_CD.substr(0,6)+"','" + dat.PD_CD.substr(6,6) + "','"+ dat.PD_CD.substr(12) +"','J');\" class=\"btn_type31 point\"><span>가입하기</span></a>";
+		result +="<a href=\"javascript:goProductDetailByPdCd('"+dat.PD_CD.substr(0,6)+"','" + dat.PD_CD.substr(6,6) + "','"+ dat.PD_CD.substr(12) +"','D');\" class=\"btn_type31\"><span>내용보기</span></a>";
+		result +="</p></li>";   
+
+		$("#slideMenu_fne").append(result);
+		result = "";
+
+	});
+}
+
+function MenuDatForFnr(){
+	var tempList = new Array();
+	_HMP_PAGE_INDEX = 1;
+	
+	var jexAjax = jex.createAjaxUtil("fnf_ebz_31010_fund_d001");
+
+	jexAjax.set("FUND_OPCMP_CD"			, "0");
+	jexAjax.set("RTMT_YN"		, "Y");
+
+	var plnDvcdList = [];
+	var tempList    = [];
+
+	var obj = new Object();
+	var obj1 = new Object();
+	var obj2 = new Object();
+	var obj3 = new Object();
+		
+	obj.BCT_OPR_FC = "101";
+	tempList[tempList.length] = obj;
+	obj1.BCT_OPR_FC = "103";
+	tempList[tempList.length] = obj1;
+	obj2.BCT_OPR_FC = "104";
+	tempList[tempList.length] = obj2;
+	obj3.BCT_OPR_FC = "102";
+	tempList[tempList.length] = obj;
+
+
+	var pobj = new Object();
+	var pobj1 = new Object();
+	var pobj2 = new Object();
+	var pobj3 = new Object();
+	var pobj4 = new Object();
+	var pobj5 = new Object();	
+	pobj.PLN_DVCD = "1";
+	plnDvcdList[plnDvcdList.length] = pobj;
+	pobj1.PLN_DVCD = "2";
+	plnDvcdList[plnDvcdList.length] = pobj1;
+	pobj2.PLN_DVCD = "3";
+	plnDvcdList[plnDvcdList.length] = pobj2;
+	pobj3.PLN_DVCD = "4";
+	plnDvcdList[plnDvcdList.length] = pobj3;
+	pobj4.PLN_DVCD = "9";
+	plnDvcdList[plnDvcdList.length] = pobj4;
+	pobj5.PLN_DVCD = "N";
+	plnDvcdList[plnDvcdList.length] = pobj5;	
+
+	jexAjax.set("BCT_OPR_FC_REC", tempList);
+	jexAjax.set("PLN_DVCD_REC", plnDvcdList);
+	jexAjax.set("SMRT_LNUP_DV", "fmnMain");              //정렬방식	
+
+	//펀드조회 웹서비스 사용으로 인한 추가항목
+	jexAjax.set("VLD_VAL"                   , getSiteDvcd()); //게시사이트구분코드 (01:금융상품몰  06:독도지점  07:그린지점  08:경주지점  09:한수원  14:혁신도시)
+	jexAjax.set("OVRS_FUND_YN"				, ""); 			  //해외펀드여부
+	jexAjax.set("FUND_SELL_CHNL_DVCD"		, ""); 			  //펀드판매채널구분
+	jexAjax.set("FUND_NVST_RISK_GDC_REC"	, []);  		  //위험등급 체크내역 가져오기
+	jexAjax.set("FUND_SELL_PSBLYN"			, "");    		  //판매완료여부 가져오기
+	jexAjax.set("OVRS_STCK_NVST_EU_FUND_YN"	, "");            //해외주식투자전용펀드여부
+		
+	//기타 : 정렬방식 순서		
+	var objWebWorkComm = new Object();
+	objWebWorkComm.INQ_SEQ = String(_HMP_PAGE_INDEX);		//조회될 페이지번호
+	objWebWorkComm.INQ_NCSE = 1;					//한페이지에 조회될 건수
+	jexAjax.set("EBZ_WEB_WORK_COMM", objWebWorkComm);
+
+	var divId="fund_b_";
+	var result = "";
+
+	jexAjax.execute(function(dat) { 			
+			
+		var jsonData = dat.REC1;
+		
+		for(var i=0; i < jsonData.length; i++) {
+			
+			var row = jsonData[i];
+
+			var addCls = "";			
+			
+			if (row.POP_PD_YN  == "Y" || row.NWGD_YN    == "Y" || row.RCMD_PD_YN == "Y"){
+				result += "<li class=\"gnb_icon_area\">";
+			}
+			if (row.POP_PD_YN  == "Y"){
+				result +="	<span><img src=\"/img/common/bg/ebz_bg_product_ico1.gif\" alt=\"인기상품\"></span>";
+			}
+			if (row.NWGD_YN    == "Y"){
+				result +="	<span><img src=\"/img/common/bg/ebz_bg_product_ico2.gif\" alt=\"신상품\"></span>";
+			}
+			if (row.RCMD_PD_YN == "Y"){
+				result +="	<span><img src=\"/img/common/bg/ebz_bg_product_ico3.gif\" alt=\"추천상품\"></span>";
+			}
+			if (row.POP_PD_YN  == "Y" || row.NWGD_YN    == "Y" || row.RCMD_PD_YN == "Y"){
+				result +="</li>";
+			}			
+			
+			if (jex.null2Void(row.IMG_FILE_NM) == "")
+			{
+				//result +="<li class=\"gnb_visual_area\"><a href=\"javascript:goProductDetailByPdCd('"+row.TRUST_FUND_CD.substr(0,6)+"','" + row.TRUST_FUND_CD.substr(6,6) + "','" +row.TRUST_FUND_CD.substr(12) +"','D');\" title=\"" + row.FUND_NM + "\"><img src=\"/img/common/card/ebz_retirement_test.jpg\" width=\"224\" height=\"142\" onerror=\"this.style.visibility='hidden'\" alt=\"" + row.FUND_NM + " 상품 이미지\"/></a></li>";
+				result +="<li class=\"gnb_visual_area\"><img src=\"/img/common/card/ebz_retirement_test.jpg\" width=\"224\" height=\"142\" onerror=\"this.style.visibility='hidden'\" alt=\"" + row.FUND_NM + " 상품 이미지\"/></li>";
+			}else{
+				//result +="<li class=\"gnb_visual_area\"><a href=\"javascript:goProductDetailByPdCd('"+row.TRUST_FUND_CD.substr(0,6)+"','" + row.TRUST_FUND_CD.substr(6,6) + "','" +row.TRUST_FUND_CD.substr(12) +"','D');\" title=\"" + row.FUND_NM + "\"><img src=\""+row.IMG_FILE_NM+"\" width=\"224\" height=\"142\" onerror=\"this.style.visibility='hidden'\" alt=\"" + row.FUND_NM + " 상품 이미지\"/></a></li>";
+				result +="<li class=\"gnb_visual_area\"><img src=\""+row.IMG_FILE_NM+"\" width=\"224\" height=\"142\" onerror=\"this.style.visibility='hidden'\" alt=\"" + row.FUND_NM + " 상품 이미지\"/></li>";
+			}
+			//result +="<li class=\"gnb_title_area\"><p class=\"product_sub_txt\"><a href=\"javascript:goProductDetailByPdCd('"+row.TRUST_FUND_CD.substr(0,6)+"','" + row.TRUST_FUND_CD.substr(6,6) + "','"+ row.TRUST_FUND_CD.substr(12) +"','D');\">"+row.FUND_NM+"</a></p>";
+			result +="<li class=\"gnb_title_area\"><p class=\"product_sub_txt\">"+row.FUND_NM+"</p>";
+			result +="<li class=\"gnb_con_area\"><p class=\"new_title_up\"><span>"+getFundTypeNm(row.BCT_OPR_FC)+"</span></p>";
+			result +="<li class=\"gnb_rate_area\">";
+			result +="	<p class=\"rate_txt\"><strong>"+row.MNS3_EN_R+"%</strong> (3개월)</p>";
+			result +="</li>";
+			result +="<li class=\"gnb_btn_area\"><p class=\"new_title_btn\">";
+			result +="<a href=\"javascript:goProductDetailByPdCd('"+row.TRUST_FUND_CD.substr(0,6)+"','" + row.TRUST_FUND_CD.substr(6,6) + "','"+ row.TRUST_FUND_CD.substr(12) +"','J');\" class=\"btn_type31 point\"><span>가입하기</span></a>";
+			result +="<a href=\"javascript:goProductDetailByPdCd('"+row.TRUST_FUND_CD.substr(0,6)+"','" + row.TRUST_FUND_CD.substr(6,6) + "','"+ row.TRUST_FUND_CD.substr(12) +"','D');\" class=\"btn_type31\"><span>내용보기</span></a>";
+			result +="</p></li>";   
+
+			$("#slideMenu_fnr").append(result);
+			result = "";
+
+			break;
+
+		}
+	});
+}
+
+function MenuDatForFni(){
+	var jexAjax = jex.createAjaxUtil("fnl_ebz_41030_loan_d001");
+	
+	jexAjax.set("PD_CD"    , "20280101001074001");
+	jexAjax.set("VLD_VAL"  , "01");        //게시사이트구분코드 (01:금융상품몰  06:독도지점  07:그린지점  08:경주지점  09:한수원  14:혁신도시)
+	
+	jexAjax.addOption("loading", true);
+	jexAjax.execute(function(dat) {
+		
+			var loanNm 		= dat.PD_NM; 						//대출명
+			var loanGaeyo 	= dat.PD_SMRY_CN;  					//대출상품개요
+			var delbNo      = dat.DELB_NO;                      //심의번호
+			var loanObj 	= dat.LO_TRGET_CUST_CN;  			//대출대상
+	        var loanLimit 	= dat.LO_LMT_CN;  					//대출한도
+	        var loanRate 	= dat.LO_INRST_CN;  				//대출금리
+
+			var icon1    	= dat.POP_PD_YN;  				//대출금리
+			var icon2    	= dat.RCMD_PD_YN;  				//대출금리
+			var icon3    	= dat.NWGD_YN;  				//대출금리
+
+	        var pdImgPath 	= "/img/common/card/ebz_loan_test.jpg"; 			//상품이미지 경로
+	        if (jex.null2Void(dat.IMG_FILE_NM) != "") {
+	        	pdImgPath	= dat.IMG_FILE_NM;
+	        }
+			
+	        /*var trData = "<h2 class=\"produtTit1\">" + loanNm + "</h2>"
+	        	       + "<div class=\"msg_txt hb_10\">" + loanGaeyo + "</div>";
+	        */
+			var result = "";
+			
+			if (icon1 == "Y" || icon2 == "Y" || icon3 == "Y")
+			{
+				result += "<li class=\"gnb_icon_area\">";
+			}
+			if (icon1 == "Y"){
+				result += "<span><img src=\"/img/common/bg/ebz_bg_product_ico1.gif\" alt=\"인기상품\"></span> ";
+			}
+			if (icon3 == "Y"){
+				result += "<span><img src=\"/img/common/bg/ebz_bg_product_ico2.gif\" alt=\"신상품\"></span> ";
+			}
+			if (icon2 == "Y"){
+				result += "<span><img src=\"/img/common/bg/ebz_bg_product_ico3.gif\" alt=\"추천상품\"></span>";
+			}			
+			if (icon1 == "Y" || icon2 == "Y" || icon3 == "Y")
+			{
+				result += "</li>";
+			}
+			//result +="<li class=\"gnb_visual_area\"><a href=\"javascript:goProductDetailByPdCd('202801','010010','74001','D');\" title=\"" +loanNm + "\"><img src=\""+pdImgPath+"\" width=\"224\" height=\"142\" onerror=\"this.style.visibility='hidden'\" alt=\"" + loanNm + " 상품 이미지\"/></a></li>";
+			result +="<li class=\"gnb_visual_area\"><img src=\""+pdImgPath+"\" width=\"224\" height=\"142\" onerror=\"this.style.visibility='hidden'\" alt=\"" + loanNm + " 상품 이미지\"/></li>";
+			
+
+			result += "<li class=\"gnb_title_area\"><p class=\"product_sub_txt\"><span>"+loanNm+"</span></p></li>";
+
+			result += "<li class=\"gnb_con_area\"><p class=\"new_title_up\">";
+			//result += "<a href=\"javascript:goProductDetailByPdCd('202801','010010','74001','D');\">"+jex.null2Void(loanGaeyo)+"</a></p></li>";
+			result += ""+jex.null2Void(loanGaeyo)+"</p></li>";
+			/*if (loanGaeyo.length > 50)
+			{
+				loanGaeyo = loanGaeyo.substr(0,50)+"...";
+			}*/
+			result +="<li class=\"gnb_btn_area\"><p class=\"new_title_btn\">";
+			result +="<a href=\"javascript:goProductDetailByPdCd('202801','010010','74001','J');\" class=\"btn_type31 point\"><span>가입하기</span></a>";
+			result +="<a href=\"javascript:goProductDetailByPdCd('202801','010010','74001','D');\" class=\"btn_type31\"><span>내용보기</span></a></p></li> ";
+			
+			$("#slideMenu_fni").append(result);
+			result = "";		
+	});
+}
+
+
+function MenuDatForFns(){
+	_HMP_PAGE_INDEX = 1;
+	// 공통입력부 셋팅		
+	var jexAjax     = "";
+	
+	jexAjax     = jex.createAjaxUtil("fnp_ebz_21010_depo_d001");
+		
+	var dpoDvCnt    = 0;
+	
+	//상품몰 조회 구분코드
+	jexAjax.set("MALL_INQ_DVCD" 	, "99"); // all 
+		
+	/* 01:금융몰 */
+	jexAjax.set("VLD_VAL" 			, "01");
+	
+	//기타 : 정렬방식 순서		
+	jexAjax.set("SMRT_LNUP_DV", "Menu∈10527012001060000");
+
+	var objWebWorkComm = new Object();
+	objWebWorkComm.INQ_SEQ = String(_HMP_PAGE_INDEX);		//조회될 페이지번호
+	objWebWorkComm.INQ_NCSE = 1;					//한페이지에 조회될 건수
+	jexAjax.set("EBZ_WEB_WORK_COMM", objWebWorkComm);
+	
+	var jObj = {};
+	jObj = dataCtrl.getObjData('FNM_DETAIL_DATA');
+	
+	if(jObj == null){
+		jexAjax.addOption("loading", true);
+	}
+	
+	//_TABLE.clearTbl(true);
+
+	var divId="depo_b_";
+	var result = "";
+
+	jexAjax.execute(function(dat) { 			
+		
+		//_DATA_LIST = dat.REC1; //조회된 값을 전역변수에 저장
+		
+		var jsonData = dat.REC1;
+		
+		for(var i=0; i < jsonData.length; i++) {
+			var row = jsonData[i];
+			var addCls = "";
+			
+			if(row.POP_PD_YN  == "Y" || row.RCMD_PD_YN == "Y" || row.NWGD_YN    == "Y"){
+				result += "<li class=\"gnb_icon_area\">";
+			}
+			if(row.POP_PD_YN  == "Y")
+				result += "	<span><img src=\"/img/common/bg/ebz_bg_product_ico1.gif\" alt=\"인기상품\"></span>";
+			if(row.RCMD_PD_YN == "Y")
+				result += "	<span><img src=\"/img/common/bg/ebz_bg_product_ico2.gif\" alt=\"신상품\"></span>";
+			if(row.NWGD_YN    == "Y")
+				result += "	<span><img src=\"/img/common/bg/ebz_bg_product_ico3.gif\" alt=\"추천상품\"></span>";
+			
+			if(row.POP_PD_YN  == "Y" || row.RCMD_PD_YN == "Y" || row.NWGD_YN    == "Y"){
+				result += "</li>";
+			}
+			
+			if (row.PD_NM.length > "13")
+			{
+				addCls = " long_line";
+			}
+			//result += "<li class=\"gnb_visual_area\"><p class=\"product_sub_txt\"><a href=\"javascript:goProductDetailByPdCd('"+row.PD_CD.substr(0,6)+"','" + row.PD_CD.substr(6,6) + "','" +row.PD_CD.substr(12) +"','D');\" title=\"" + row.PD_NM + "\"><img src=\""+row.IMG_FILE_NM+"\" width=\"224\" height=\"142\" onerror=\"this.style.visibility='hidden'\" alt=\"" + row.PD_NM + " 상품 이미지\"/></a></p></li>";
+			//result += "<li class=\"gnb_title_area\"><p class=\"product_sub_txt\"><a href=\"javascript:goProductDetailByPdCd('"+row.PD_CD.substr(0,6)+"','" +row.PD_CD.substr(6,6)+ "','"+ row.PD_CD.substr(12)+ "','D');\">" + row.PD_NM + "</a></p></li>";
+			result += "<li class=\"gnb_visual_area\"><p class=\"product_sub_txt\"><img src=\""+row.IMG_FILE_NM+"\" width=\"224\" height=\"142\" onerror=\"this.style.visibility='hidden'\" alt=\"" + row.PD_NM + " 상품 이미지\"/></p></li>";
+			result += "<li class=\"gnb_title_area\"><p class=\"product_sub_txt\">" + row.PD_NM + "</p></li>";
+
+			if (jex.null2Void(row.PD_SMRY_CN) != "")
+			{
+				/*if (row.PD_SMRY_CN.length > 50)
+				{
+					row.PD_SMRY_CN = row.PD_SMRY_CN.substr(0,50)+"...";
+				}*/
+				result += "<li class=\"gnb_con_area\"><p class=\"new_title_up\"><span>"+jex.null2Void(row.PD_SMRY_CN)+"</span></p></li>";
+			}
+			result += "<li class=\"gnb_rate_area\">";
+			
+			if(jex.null2Void(row.ITN_MAX_RATE) == "" || jex.null2Void(row.ITN_MAX_RATE) == "-"){
+				result += "	<p class=\"rate_txt\">최고이자율 연 <strong>-%</strong></p>";;
+			}else{
+				var maxRate = "";
+				if(row.SITE_JN_PSBLYN == "Y" && row.ITN_JN_PSBLYN == "Y"){
+					maxRate = jex.null2Void(row.ITN_MAX_RATE);
+				}
+				else if(row.WIC_JN_PSBLYN == "Y" && row.ITN_JN_PSBLYN != "Y"){
+					maxRate = jex.null2Void(row.WIC_MAX_RATE);
+				}
+				else if(row.SMRT_BNK_JN_PSBLYN == "Y" && row.ITN_JN_PSBLYN != "Y"){
+					maxRate = jex.null2Void(row.ITN_MAX_RATE);
+				}
+				result += "	<p class=\"rate_txt\">최고이자율 연 <strong>"+ maxRate +"%</strong></p>";
+				result += "	<p>(1년기준 세금납부전)</p>";
+			}				
+			result += "</li>";
+			result += "<li class=\"gnb_btn_area\"><p class=\"new_title_btn\">";
+			if(row.SITE_JN_PSBLYN == "Y" && row.ITN_JN_PSBLYN == "Y"){
+				result += "<a href=\"javascript:goProductDetailByPdCd('"+row.PD_CD.substr(0,6)+"','" + row.PD_CD.substr(6,6)+ "','"+ row.PD_CD.substr(12) +"','J')\" title=\"" + row.PD_NM + " 가입하기\" class=\"btn_type31 point\"><span>가입하기</span></a>";
+			}
+			result +="<a href=\"javascript:goProductDetailByPdCd('"+row.PD_CD.substr(0,6)+"','" + row.PD_CD.substr(6,6)+ "','"+ row.PD_CD.substr(12) +"','D');\" class=\"btn_type31\"><span>내용보기</span></a>";
+			result += "</p>";
+			result +="</li>";
+		}
+		
+		$("#slideMenu_fns").append(result);
+	});
+	return result;
+}
+
+function MenuDatForFsv(mnnm){
+	_HMP_PAGE_INDEX = 1;
+	// 공통입력부 셋팅		
+	var jexAjax     = "";
+	
+	jexAjax     = jex.createAjaxUtil("fnp_ebz_21010_depo_d001");
+		
+	var dpoDvCnt    = 0;
+	
+	//상품몰 조회 구분코드
+	jexAjax.set("MALL_INQ_DVCD" 	, "99"); // all 
+		
+	/* 01:금융몰 */
+	jexAjax.set("VLD_VAL" 			, "01");
+	
+	//기타 : 정렬방식 순서		
+//	jexAjax.set("SMRT_LNUP_DV", "Menu∈10521001000712001");
+	jexAjax.set("SMRT_LNUP_DV", "Menu∈10511008001166001");	 
+
+	var objWebWorkComm = new Object();
+	objWebWorkComm.INQ_SEQ = String(_HMP_PAGE_INDEX);	//조회될 페이지번호
+	objWebWorkComm.INQ_NCSE = 1;						//한페이지에 조회될 건수
+	jexAjax.set("EBZ_WEB_WORK_COMM", objWebWorkComm);
+	
+	var jObj = {};
+	jObj = dataCtrl.getObjData('FNM_DETAIL_DATA');
+	
+	if(jObj == null){
+		jexAjax.addOption("loading", true);
+	}
+	
+	//_TABLE.clearTbl(true);
+
+	var divId="depo_b_";
+	var result = "";
+
+	jexAjax.execute(function(dat) { 			
+		
+		//_DATA_LIST = dat.REC1; //조회된 값을 전역변수에 저장
+		
+		var jsonData = dat.REC1;
+		
+		for(var i=0; i < jsonData.length; i++) {
+			var row = jsonData[i];
+			var addCls = "";
+			
+			if(row.POP_PD_YN  == "Y" || row.RCMD_PD_YN == "Y" || row.NWGD_YN    == "Y"){
+				result += "<li class=\"gnb_icon_area\">";
+			}
+			if(row.POP_PD_YN  == "Y")
+				result += "	<span><img src=\"/img/common/bg/ebz_bg_product_ico1.gif\" alt=\"인기상품\"></span>";
+			if(row.RCMD_PD_YN == "Y")
+				result += "	<span><img src=\"/img/common/bg/ebz_bg_product_ico2.gif\" alt=\"신상품\"></span>";
+			if(row.NWGD_YN    == "Y")
+				result += "	<span><img src=\"/img/common/bg/ebz_bg_product_ico3.gif\" alt=\"추천상품\"></span>";
+			
+			if(row.POP_PD_YN  == "Y" || row.RCMD_PD_YN == "Y" || row.NWGD_YN    == "Y"){
+				result += "</li>";
+			}
+			
+			if (row.PD_NM.length > "13")
+			{
+				addCls = " long_line";
+			}
+			//result += "<li class=\"gnb_visual_area\"><p class=\"product_sub_txt\"><a href=\"javascript:goProductDetailByPdCd('"+row.PD_CD.substr(0,6)+"','" + row.PD_CD.substr(6,6) + "','" +row.PD_CD.substr(12) +"','D');\" title=\"" + row.PD_NM + "\"><img src=\""+row.IMG_FILE_NM+"\" width=\"224\" height=\"142\" onerror=\"this.style.visibility='hidden'\" alt=\"" + row.PD_NM + " 상품 이미지\"/></a></p></li>";
+			//result += "<li class=\"gnb_title_area\"><p class=\"product_sub_txt\"><a href=\"javascript:goProductDetailByPdCd('"+row.PD_CD.substr(0,6)+"','" +row.PD_CD.substr(6,6)+ "','"+ row.PD_CD.substr(12)+ "','D');\">" + row.PD_NM + "</a></p></li>";
+			result += "<li class=\"gnb_visual_area\"><p class=\"product_sub_txt\"><img src=\""+row.IMG_FILE_NM+"\" width=\"224\" height=\"142\" onerror=\"this.style.visibility='hidden'\" alt=\"" + row.PD_NM + " 상품 이미지\"/></p></li>";
+			result += "<li class=\"gnb_title_area\"><p class=\"product_sub_txt\">" + row.PD_NM + "</p></li>";
+
+
+			if (jex.null2Void(row.PD_SMRY_CN) != "")
+			{
+				/*if (row.PD_SMRY_CN.length > 50)
+				{
+					row.PD_SMRY_CN = row.PD_SMRY_CN.substr(0,50)+"...";
+				}*/
+				result += "<li class=\"gnb_con_area\"><p class=\"new_title_up\"><span>"+jex.null2Void(row.PD_SMRY_CN)+"</span></p></li>";
+			}
+			result += "<li class=\"gnb_rate_area\">";
+			
+			if(jex.null2Void(row.ITN_MAX_RATE) == "" || jex.null2Void(row.ITN_MAX_RATE) == "-"){
+				result += "	<p class=\"rate_txt\">최고이자율 연 <strong>-%</strong></p>";;
+			}else{
+				var maxRate = "";
+				if(row.SITE_JN_PSBLYN == "Y" && row.ITN_JN_PSBLYN == "Y"){
+					maxRate = jex.null2Void(row.ITN_MAX_RATE);
+				}
+				else if(row.WIC_JN_PSBLYN == "Y" && row.ITN_JN_PSBLYN != "Y"){
+					maxRate = jex.null2Void(row.WIC_MAX_RATE);
+				}
+				else if(row.SMRT_BNK_JN_PSBLYN == "Y" && row.ITN_JN_PSBLYN != "Y"){
+					maxRate = jex.null2Void(row.ITN_MAX_RATE);
+				}
+				result += "	<p class=\"rate_txt\">최고이자율 연 <strong>"+ maxRate +"%</strong></p>";
+				result += "	<p>(1년기준 세금납부전)</p>";
+			}				
+			result += "</li>";
+			result += "<li class=\"gnb_btn_area\"><p class=\"new_title_btn\">";
+			if(row.SITE_JN_PSBLYN == "Y" && row.ITN_JN_PSBLYN == "Y"){
+				result += "<a href=\"javascript:goProductDetailByPdCd('"+row.PD_CD.substr(0,6)+"','" + row.PD_CD.substr(6,6)+ "','"+ row.PD_CD.substr(12) +"','J')\" title=\"" + row.PD_NM + " 가입하기\" class=\"btn_type31 point\"><span>가입하기</span></a>";
+			}
+			result +="<a href=\"javascript:goProductDetailByPdCd('"+row.PD_CD.substr(0,6)+"','" + row.PD_CD.substr(6,6)+ "','"+ row.PD_CD.substr(12) +"','D');\" class=\"btn_type31\"><span>내용보기</span></a>";
+			result += "</p>";
+			result +="</li>";
+		}
+		
+		$("#slideMenu_"+mnnm).html(result);
+	});
+	return result;
+}
+
+function MenuDatForHlp(mnnm){
+	_HMP_PAGE_INDEX = 1;
+
+	// 공통입력부 셋팅		
+	var jexAjax     = "";
+	
+	jexAjax     = jex.createAjaxUtil("fnp_ebz_21010_depo_d001");
+		
+	var dpoDvCnt    = 0;
+	
+	//상품몰 조회 구분코드
+	jexAjax.set("MALL_INQ_DVCD" 	, "99"); // all 
+		
+	// 게시사이트 01:금융몰
+	jexAjax.set("VLD_VAL" 			, "01");
+	
+	//기타 : 정렬방식 순서		
+//	jexAjax.set("SMRT_LNUP_DV", "Menu∈10521001000712001");
+	jexAjax.set("SMRT_LNUP_DV", "Menu∈10511008001166001");
+
+	var objWebWorkComm = new Object();
+	objWebWorkComm.INQ_SEQ = String(_HMP_PAGE_INDEX);	//조회될 페이지번호
+	objWebWorkComm.INQ_NCSE = 1;						//한페이지에 조회될 건수
+	jexAjax.set("EBZ_WEB_WORK_COMM", objWebWorkComm);
+	
+	var jObj = {};
+	jObj = dataCtrl.getObjData('FNM_DETAIL_DATA');
+	
+	if(jObj == null){
+		jexAjax.addOption("loading", true);
+	}
+	
+	var divId="depo_b_";
+	var result = "";
+
+	jexAjax.execute(function(dat) {
+		var jsonData = dat.REC1;
+		
+		for(var i=0; i < jsonData.length; i++) {
+			var row = jsonData[i];
+			var addCls = "";
+			
+			if(row.POP_PD_YN  == "Y" || row.RCMD_PD_YN == "Y" || row.NWGD_YN    == "Y"){
+				result += "<li class=\"gnb_icon_area\">";
+			}
+			if(row.POP_PD_YN  == "Y")
+				result += "	<span><img src=\"/img/common/bg/ebz_bg_product_ico1.gif\" alt=\"인기상품\"></span>";
+			if(row.RCMD_PD_YN == "Y")
+				result += "	<span><img src=\"/img/common/bg/ebz_bg_product_ico2.gif\" alt=\"신상품\"></span>";
+			if(row.NWGD_YN    == "Y")
+				result += "	<span><img src=\"/img/common/bg/ebz_bg_product_ico3.gif\" alt=\"추천상품\"></span>";
+			
+			if(row.POP_PD_YN  == "Y" || row.RCMD_PD_YN == "Y" || row.NWGD_YN    == "Y"){
+				result += "</li>";
+			}
+			
+			if (row.PD_NM.length > "13")
+			{
+				addCls = " long_line";
+			}
+			result += "<li class=\"gnb_visual_area\"><p class=\"product_sub_txt\"><img src=\""+row.IMG_FILE_NM+"\" width=\"224\" height=\"142\" onerror=\"this.style.visibility='hidden'\" alt=\"" + row.PD_NM + " 상품 이미지\"/></p></li>";
+			result += "<li class=\"gnb_title_area\"><p class=\"product_sub_txt\">" + row.PD_NM + "</p></li>";
+
+
+			if (jex.null2Void(row.PD_SMRY_CN) != "")
+			{
+				result += "<li class=\"gnb_con_area\"><p class=\"new_title_up\"><span>"+jex.null2Void(row.PD_SMRY_CN)+"</span></p></li>";
+			}
+			result += "<li class=\"gnb_rate_area\">";
+			
+			if(jex.null2Void(row.ITN_MAX_RATE) == "" || jex.null2Void(row.ITN_MAX_RATE) == "-"){
+				result += "	<p class=\"rate_txt\">최고이자율 연 <strong>-%</strong></p>";;
+			}else{
+				var maxRate = "";
+				if(row.SITE_JN_PSBLYN == "Y" && row.ITN_JN_PSBLYN == "Y"){
+					maxRate = jex.null2Void(row.ITN_MAX_RATE);
+				}
+				else if(row.WIC_JN_PSBLYN == "Y" && row.ITN_JN_PSBLYN != "Y"){
+					maxRate = jex.null2Void(row.WIC_MAX_RATE);
+				}
+				else if(row.SMRT_BNK_JN_PSBLYN == "Y" && row.ITN_JN_PSBLYN != "Y"){
+					maxRate = jex.null2Void(row.ITN_MAX_RATE);
+				}
+				result += "	<p class=\"rate_txt\">최고이자율 연 <strong>"+ maxRate +"%</strong></p>";
+				result += "	<p>(1년기준 세금납부전)</p>";
+			}				
+			result += "</li>";
+			result += "<li class=\"gnb_btn_area\"><p class=\"new_title_btn\">";
+			if(row.SITE_JN_PSBLYN == "Y" && row.ITN_JN_PSBLYN == "Y"){
+				result += "<a href=\"javascript:goProductDetailByPdCd('"+row.PD_CD.substr(0,6)+"','" + row.PD_CD.substr(6,6)+ "','"+ row.PD_CD.substr(12) +"','J')\" title=\"" + row.PD_NM + " 가입하기\" class=\"btn_type31 point\"><span>가입하기</span></a>";
+			}
+			result +="<a href=\"javascript:goProductDetailByPdCd('"+row.PD_CD.substr(0,6)+"','" + row.PD_CD.substr(6,6)+ "','"+ row.PD_CD.substr(12) +"','D');\" class=\"btn_type31\"><span>내용보기</span></a>";
+			result += "</p>";
+			result +="</li>";
+		}
+		
+		$("#slideMenu_"+mnnm).html(result);
+	});
+	
+	return result;
+/*	메가네비게이션 추천 상품 : 카드
+	var jexAjax = jex.createAjaxUtil("fnc_ebz_11030_card_d001");
+	jexAjax.set("PD_CD", '40100101700865000');
+	// 게시사이트 01:금융몰
+	jexAjax.set("VLD_VAL" 			, '01' 		);
+
+	var result = "";
+
+	jexAjax.execute(function(dat) {
+		
+		if (dat.PD_NM.length > "13")
+		{ addCls = " long_line"; }
+
+		if(dat.POP_PD_YN  == "Y" || dat.RCMD_PD_YN == "Y" || dat.NWGD_YN    == "Y") result += "<li class=\"gnb_icon_area\">";
+		if(dat.POP_PD_YN  == "Y") result += "	<span><img src=\"/img/common/bg/ebz_bg_product_ico1.gif\" alt=\"인기상품\"></span>";
+		if(dat.RCMD_PD_YN == "Y") result += "	<span><img src=\"/img/common/bg/ebz_bg_product_ico3.gif\" alt=\"추천상품\"></span>";
+		if(dat.NWGD_YN    == "Y") result += "	<span><img src=\"/img/common/bg/ebz_bg_product_ico2.gif\" alt=\"신상품\"></span>";
+		
+		if(dat.POP_PD_YN  == "Y" || dat.RCMD_PD_YN == "Y" || dat.NWGD_YN    == "Y") result += "</li>";
+		
+		//result += "<li class=\"gnb_visual_area\"><a href=\"javascript:goProductDetailByPdCd('"+dat.PD_CD.substr(0,6)+"','" + dat.PD_CD.substr(6,6) + "','" +dat.PD_CD.substr(12) +"','D');\" title=\"" + dat.PD_NM + "\"><img src=\""+dat.IMG_FILE_NM1+"\" width=\"224\" height=\"142\" onerror=\"this.style.visibility='hidden'\" onerror=\"this.style.visibility='hidden'\" alt=\"" + dat.PD_NM + " 상품 이미지\"/></a></li>";
+		result += "<li class=\"gnb_visual_area\"><img src=\""+dat.IMG_FILE_NM1+"\" width=\"224\" height=\"142\" onerror=\"this.style.visibility='hidden'\" onerror=\"this.style.visibility='hidden'\" alt=\"" + dat.PD_NM + " 상품 이미지\"/></li>";
+		
+		result += "<li class=\"gnb_title_area\"><p class=\"product_sub_txt\">"+dat.PD_NM+"<p></li>"
+			   +  "<li class=\"gnb_con_area\"><p class=\"new_title_up\">"+dat.CARD_CONCPT_CN+"</p></li>";
+		
+		if(jex.null2Void(dat.CARD_PROF_AT_C_CN) != ""){
+			result += "<li class=\"gnb_pro_icon_area\"><ul class=\"card_benefit_list\">";
+			var codeArr = dat.CARD_PROF_AT_C_CN.split(":");
+
+			for(var j = 0; j < codeArr.length; j++){
+				//result += "	<li class=\""+benefitClassNm(codeArr[j],'2')+"\">"+benefitClassNm(codeArr[j],'1')+"</li>";
+				result += "	<li class=\""+benefitClassNm(codeArr[j],'2')+"\"><span class=\"hidden\">"+benefitClassNm(codeArr[j],'1')+"</span></li>";
+				//if (j == 2)
+				if (j == 6)
+				{
+					break;
+				}
+			}
+			result += "</ul></li>";
+		}
+
+		if(dat.SITE_JN_PSBLYN == "Y" && dat.ITN_JN_PSBLYN == "Y"){
+			result +=  "<li class=\"gnb_btn_area\"><p class=\"new_title_btn\"><a href=\"javascript:goProductDetailByPdCd('"+dat.PD_CD.substr(0,6)+"','" + dat.PD_CD.substr(6,6) + "','"+ dat.PD_CD.substr(12) +"','J');\" title=\"" + dat.PD_NM + " \" class=\"btn_type31 point\"><span>가입하기</span></a><a href=\"javascript:goProductDetailByPdCd('"+dat.PD_CD.substr(0,6)+"','" + dat.PD_CD.substr(6,6) + "','"+ dat.PD_CD.substr(12) +"','D');\" class=\"btn_type31\"><span>내용보기</span></a></p></li>"
+		}
+
+	$("#slideMenu_"+mnnm).html(result);
+	});
+	return result;
+*/
+}
+function MenuDatForDgi(mnnm){
+	_HMP_PAGE_INDEX = 1;
+	// 공통입력부 셋팅		
+	var jexAjax     = "";
+	
+	jexAjax     = jex.createAjaxUtil("fnp_ebz_21010_depo_d001");
+		
+	var dpoDvCnt    = 0;
+	
+	//상품몰 조회 구분코드
+	jexAjax.set("MALL_INQ_DVCD" 	, "99"); // all 
+		
+	/* 01:금융몰 */
+	jexAjax.set("VLD_VAL" 			, "01");
+	
+	//기타 : 정렬방식 순서		
+//	jexAjax.set("SMRT_LNUP_DV", "Menu∈10527012001060000");
+	jexAjax.set("SMRT_LNUP_DV", "Menu∈10511008001166001");
+
+	var objWebWorkComm = new Object();
+	objWebWorkComm.INQ_SEQ = String(_HMP_PAGE_INDEX);		//조회될 페이지번호
+	objWebWorkComm.INQ_NCSE = 1;					//한페이지에 조회될 건수
+	jexAjax.set("EBZ_WEB_WORK_COMM", objWebWorkComm);
+	
+	var jObj = {};
+	jObj = dataCtrl.getObjData('FNM_DETAIL_DATA');
+	
+	if(jObj == null){
+		jexAjax.addOption("loading", true);
+	}
+	
+	//_TABLE.clearTbl(true);
+
+	var divId="depo_b_";
+	var result = "";
+
+	jexAjax.execute(function(dat) { 			
+		
+		//_DATA_LIST = dat.REC1; //조회된 값을 전역변수에 저장
+		
+		var jsonData = dat.REC1;
+		
+		for(var i=0; i < jsonData.length; i++) {
+			var row = jsonData[i];
+			var addCls = "";
+			
+			if(row.POP_PD_YN  == "Y" || row.RCMD_PD_YN == "Y" || row.NWGD_YN    == "Y"){
+				result += "<li class=\"gnb_icon_area\">";
+			}
+			if(row.POP_PD_YN  == "Y")
+				result += "	<span><img src=\"/img/common/bg/ebz_bg_product_ico1.gif\" alt=\"인기상품\"></span>";
+			if(row.RCMD_PD_YN == "Y")
+				result += "	<span><img src=\"/img/common/bg/ebz_bg_product_ico2.gif\" alt=\"신상품\"></span>";
+			if(row.NWGD_YN    == "Y")
+				result += "	<span><img src=\"/img/common/bg/ebz_bg_product_ico3.gif\" alt=\"추천상품\"></span>";
+			
+			if(row.POP_PD_YN  == "Y" || row.RCMD_PD_YN == "Y" || row.NWGD_YN    == "Y"){
+				result += "</li>";
+			}
+			
+			if (row.PD_NM.length > "13")
+			{
+				addCls = " long_line";
+			}
+			//result += "<li class=\"gnb_visual_area\"><p class=\"product_sub_txt\"><a href=\"javascript:goProductDetailByPdCd('"+row.PD_CD.substr(0,6)+"','" + row.PD_CD.substr(6,6) + "','" +row.PD_CD.substr(12) +"','D');\" title=\"" + row.PD_NM + "\"><img src=\""+row.IMG_FILE_NM+"\" width=\"224\" height=\"142\" onerror=\"this.style.visibility='hidden'\" alt=\"" + row.PD_NM + " 상품 이미지\"/></a></p></li>";
+			//result += "<li class=\"gnb_title_area\"><p class=\"product_sub_txt\"><a href=\"javascript:goProductDetailByPdCd('"+row.PD_CD.substr(0,6)+"','" +row.PD_CD.substr(6,6)+ "','"+ row.PD_CD.substr(12)+ "','D');\">" + row.PD_NM + "</a></p></li>";
+			result += "<li class=\"gnb_visual_area\"><p class=\"product_sub_txt\"><img src=\""+row.IMG_FILE_NM+"\" width=\"224\" height=\"142\" onerror=\"this.style.visibility='hidden'\" alt=\"" + row.PD_NM + " 상품 이미지\"/></p></li>";
+			result += "<li class=\"gnb_title_area\"><p class=\"product_sub_txt\">" + row.PD_NM + "</p></li>";
+
+			if (jex.null2Void(row.PD_SMRY_CN) != "")
+			{
+				/*if (row.PD_SMRY_CN.length > 50)
+				{
+					row.PD_SMRY_CN = row.PD_SMRY_CN.substr(0,50)+"...";
+				}*/
+				result += "<li class=\"gnb_con_area\"><p class=\"new_title_up\"><span>"+jex.null2Void(row.PD_SMRY_CN)+"</span></p></li>";
+			}
+			result += "<li class=\"gnb_rate_area\">";
+			
+			if(jex.null2Void(row.ITN_MAX_RATE) == "" || jex.null2Void(row.ITN_MAX_RATE) == "-"){
+				result += "	<p class=\"rate_txt\">최고이자율 연 <strong>-%</strong></p>";;
+			}else{
+				var maxRate = "";
+				if(row.SITE_JN_PSBLYN == "Y" && row.ITN_JN_PSBLYN == "Y"){
+					maxRate = jex.null2Void(row.ITN_MAX_RATE);
+				}
+				else if(row.WIC_JN_PSBLYN == "Y" && row.ITN_JN_PSBLYN != "Y"){
+					maxRate = jex.null2Void(row.WIC_MAX_RATE);
+				}
+				else if(row.SMRT_BNK_JN_PSBLYN == "Y" && row.ITN_JN_PSBLYN != "Y"){
+					maxRate = jex.null2Void(row.ITN_MAX_RATE);
+				}
+				result += "	<p class=\"rate_txt\">최고이자율 연 <strong>"+ maxRate +"%</strong></p>";
+				result += "	<p>(1년기준 세금납부전)</p>";
+			}				
+			result += "</li>";
+			result += "<li class=\"gnb_btn_area\"><p class=\"new_title_btn\">";
+			if(row.SITE_JN_PSBLYN == "Y" && row.ITN_JN_PSBLYN == "Y"){
+				result += "<a href=\"javascript:goProductDetailByPdCd('"+row.PD_CD.substr(0,6)+"','" + row.PD_CD.substr(6,6)+ "','"+ row.PD_CD.substr(12) +"','J')\" title=\"" + row.PD_NM + " 가입하기\" class=\"btn_type31 point\"><span>가입하기</span></a>";
+			}
+			result +="<a href=\"javascript:goProductDetailByPdCd('"+row.PD_CD.substr(0,6)+"','" + row.PD_CD.substr(6,6)+ "','"+ row.PD_CD.substr(12) +"','D');\" class=\"btn_type31\"><span>내용보기</span></a>";
+			result += "</p>";
+			result +="</li>";
+		}
+		
+		$("#slideMenu_"+mnnm).html(result);
+	});
+	return result;
+}
+
+
+function linkMenuPageMain(linkValue,id,num,linkPage ,siteCd){
+	dataCtrl.delObjData("MENU_LOCATION");
+
+	var obj = {'MENU_LOCATION' 	: linkValue,
+			   'MENU_DEPTH'		: '3',
+			   'ID'				: id,
+			   'NUM'			: num,
+			   'LOCATION_PAGE'	: linkPage,
+			   'BT_LINK'	    : 'TRUE',			   
+			   'HP_BK'			:'HP'};		
+	
+	
+	dataCtrl.setObjData("MENU_LOCATION",JSON.stringify(obj));
+	
+	if (siteCd == 'cdd'){
+		linkPage = _CodeMgr.getCodeMsg("CODE_URL", "1085") + linkPage;
+	}else if (siteCd == 'cgr'){
+		linkPage = _CodeMgr.getCodeMsg("CODE_URL", "1086") + linkPage;
+	}else if (siteCd == 'cgj'){
+		linkPage = _CodeMgr.getCodeMsg("CODE_URL", "1085") + linkPage;
+	}else if (siteCd == 'dcn'){
+		linkPage = _CodeMgr.getCodeMsg("CODE_URL", "1017") + linkPage;
+	}else if (siteCd == 'msu'){
+		linkPage = _CodeMgr.getCodeMsg("CODE_URL", "1018") + linkPage;
+	}else if (siteCd == 'dlo'){
+		linkPage = _CodeMgr.getCodeMsg("CODE_URL", "1020") + linkPage;
+	}else if (siteCd == 'dfg'){
+		linkPage = _CodeMgr.getCodeMsg("CODE_URL", "1011") + linkPage;
+	}else{
+		linkPage = _CodeMgr.getCodeMsg("CODE_URL", "1002") + linkPage;
+	}
+	
+	location.href = linkPage;
+}
+
+function linkMenuPagePopup(linkValue,id,num,linkPage ,siteCd){
+	dataCtrl.delObjData("MENU_LOCATION");
+
+	var obj = {'MENU_LOCATION' 	: linkValue,
+			   'MENU_DEPTH'		: '3',
+			   'ID'				: id,
+			   'NUM'			: num,
+			   'LOCATION_PAGE'	: linkPage,
+			   'BT_LINK'	    : 'TRUE',			   
+			   'HP_BK'			:'HP'};		
+	
+	
+	dataCtrl.setObjData("MENU_LOCATION",JSON.stringify(obj));
+	
+	if (siteCd == 'cdd'){
+		linkPage = _CodeMgr.getCodeMsg("CODE_URL", "1085") + linkPage;
+	}else if (siteCd == 'cgr'){
+		linkPage = _CodeMgr.getCodeMsg("CODE_URL", "1086") + linkPage;
+	}else if (siteCd == 'cgj'){
+		linkPage = _CodeMgr.getCodeMsg("CODE_URL", "1085") + linkPage;
+	}else if (siteCd == 'dcn'){
+		linkPage = _CodeMgr.getCodeMsg("CODE_URL", "1017") + linkPage;
+	}else if (siteCd == 'msu'){
+		linkPage = _CodeMgr.getCodeMsg("CODE_URL", "1018") + linkPage;
+	}else if (siteCd == 'dlo'){
+		linkPage = _CodeMgr.getCodeMsg("CODE_URL", "1020") + linkPage;
+	}else if (siteCd == 'dfg'){
+		linkPage = _CodeMgr.getCodeMsg("CODE_URL", "1011") + linkPage;
+	}else{
+		linkPage = _CodeMgr.getCodeMsg("CODE_URL", "1002") + linkPage;
+	}
+	
+	window.open(linkPage);
+}

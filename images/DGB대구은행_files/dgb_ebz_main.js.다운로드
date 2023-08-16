@@ -1,0 +1,107 @@
+/**
+ * <pre>
+ * DGBHP PROJECT
+ * @COPYRIGHT (c) 2009-2012 WebCash, Inc. All Right Reserved.
+ * @File Name      : dgb_ebz_main.js
+ * @File path        : DGBHP_PT_STATIC/web/js/hmp/mnv
+ * @author           : 김경수 
+ * @Description    : 메인페이지
+ * @History          : 20130212084537, 김경수 
+ * </pre>
+ **/
+var _VIEW_ID = "dgb_ebz_main";
+new (Jex.extend({
+    onload:function() {
+        _this = this;
+
+        noticeHtml = getSubBbsHtml(1);    // 새소식
+        eventHtml  = getSubBbsHtml(3);    // 이벤트
+
+        $("#list_newBbs").html(noticeHtml);
+        $("#list_event" ).html(eventHtml);
+
+        // 로그인 체크
+        getSessionInfoHomeMain("dgb");
+    }, event:function() {
+        // 상단 메뉴 START  -------------------------
+        // 
+        this.addEvent('#btn_quickSearch', 'click', function(e) {
+            fn_quickSearchPopup();
+        });
+        // 상단 메뉴 END    -------------------------
+    }
+}))();
+
+// 한국어
+function selectKRLanguage(){
+    dataCtrl.delObjData("MENU_LOCATION");
+    location.href = getUrl("dgb");
+}
+
+// 영문
+function selectENLanguage(){
+    dataCtrl.delObjData("MENU_LOCATION");
+    var jexAjax = jex.createAjaxUtil("com_ebz_logout");
+    jexAjax.execute(function(dat) {
+        var objLk = {'HP_BK':'BK','LOCATION_PAGE': getUrl("dgb_en")};
+        dataCtrl.setObjData("BK_LINK",JSON.stringify(objLk));   
+        location.href = _CodeMgr.getCodeMsg("CODE_URL", "1090");  //https://banking.dgb.co.kr/index.jsp         
+    });
+}
+
+// 중국어
+function selectCNLanguage(){
+    dataCtrl.delObjData("MENU_LOCATION");
+    var jexAjax = jex.createAjaxUtil("com_ebz_logout");
+    jexAjax.execute(function(dat) {
+        var objLk = {'HP_BK':'BK','LOCATION_PAGE': getUrl("dgb_cn")};
+        dataCtrl.setObjData("BK_LINK",JSON.stringify(objLk));   
+        location.href = _CodeMgr.getCodeMsg("CODE_URL", "1090");  //https://banking.dgb.co.kr/index.jsp         
+    });
+}
+
+// 로그아웃
+function logOut(){
+    var jexAjax = jex.createAjaxUtil("com_ebz_logout");
+    jexAjax.execute(function(dat) {
+    });
+}
+
+/**
+ * 홈페이지 로그인 체크
+ * @param sub
+ */
+function getSessionInfoHomeMain(sub){
+    _PREV_LOGIN_PAGE = getUrl(sub);
+    
+    var obj = new Object();
+    obj = getLoginSessionInfo();
+    
+    if( obj.LOGIN_DVCD == "0" )
+    {
+        $(".login-after" ).hide();
+        $(".login-before").show();
+    }
+    else if( obj.LOGIN_DVCD == "1" )
+    {
+        $(".login-before").hide();
+        $("#bzman_nm").html(obj.CUST_NM);
+        $(".login-after" ).show();
+        sessionCountdown("topSessionCount",dbSessionTime,0, 'N');
+    }
+    else if( obj.LOGIN_DVCD == "2" )
+    {
+        $(".login-before").hide();
+        $("#bzman_nm").html(obj.CUST_NM);
+        $(".login-after" ).show();
+        sessionCountdown("topSessionCount",dbSessionTime,0, 'N');
+    }
+    else
+    {
+        $(".login-after" ).hide();
+        $(".login-before").show();
+    }
+}
+
+
+
