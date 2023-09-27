@@ -16,6 +16,7 @@ var swiper = new Swiper(".mySwiper", {
 });
 
 
+
 function SwiperFuntion(selector, change, animation = "Right", delay = 0){
   const activeSlide = document.querySelector(".swiper-slide-active");
  activeSlide.querySelectorAll(selector).forEach(el=>{
@@ -52,4 +53,4 @@ swiper.on("transitionEnd",function(){
   SwiperFuntion("h3",false, "right")
   SwiperFuntion("p",false, "right" ,0.3)
   SwiperFuntion(".swiper-bg",false, "right" ,0.3)
-  
+
